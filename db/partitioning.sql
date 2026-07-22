@@ -16,16 +16,16 @@ CREATE TABLE trades (
     counterparty_id BIGINT        NOT NULL REFERENCES counterparties(id),
     asset_class     VARCHAR(20)   NOT NULL,
     side            VARCHAR(4)    NOT NULL,
-    quantity        NUMERIC(18,4) NOT NULL,
-    price           NUMERIC(18,4) NOT NULL,
+    quantity        NUMERIC(18,4) NOT NULL CHECK (quantity>0),
+    price           NUMERIC(18,4) NOT NULL CHECK (price>0),
     trade_date      DATE          NOT NULL,
-    status          VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
+    status          VARCHAR(20)   NOT NULL DEFAULT 'PENDING' CHECK (status IN('PENDING','MATCHED','UNMATCHED','DISPUTED','CANCELED')),
     deleted_at      TIMESTAMPTZ,
-    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at     TIMESTAMPTZ,
-    PRIMARY KEY (id, trade_date)
+    PRIMARY KEY (id, trade_date),
+    UNIQUE (trade_ref, trade_date)
 ) PARTITION BY RANGE (trade_date);
-
 -- 3. Per-month partitions (12-month rolling window). Add new ones on schedule.
 CREATE TABLE trades_y2026m05 PARTITION OF trades
     FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
