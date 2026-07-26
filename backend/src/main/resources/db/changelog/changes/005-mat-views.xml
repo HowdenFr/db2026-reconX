@@ -41,4 +41,9 @@
         </rollback>
     </changeSet>
 
+    <!-- ADV013 — materialized-view release boundary -->
+    <changeSet id="tag-release-1-2" author="trainer">
+        <tagDatabase tag="release-1.2"/>
+    </changeSet>
+
 </databaseChangeLog>
