@@ -18,6 +18,11 @@
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <changeSet id="001-init-tag" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM databasechangelog WHERE tag = 'v1.0.0-init'
+            </sqlCheck>
+        </preConditions>
         <tagDatabase tag="v1.0.0-init"/>
     </changeSet>
 
