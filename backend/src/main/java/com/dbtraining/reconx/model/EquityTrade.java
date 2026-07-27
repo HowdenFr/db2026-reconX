@@ -75,6 +75,31 @@ public final class EquityTrade implements TradeType {
         return counterpartyId;
     }
 
+    // NOTE:
+// Deliberately excludes counterpartyId to prevent PII from
+// appearing in application logs.
+    @Override
+    public String toString() {
+        return """
+                EquityTrade[
+                    tradeRef=%s,
+                    instrumentSymbol=%s,
+                    quantity=%s,
+                    price=%s,
+                    currency=%s,
+                    side=%s
+                ]
+                """
+                .formatted(
+                        tradeRef,
+                        instrumentSymbol,
+                        quantity.toPlainString(),
+                        price.toPlainString(),
+                        currency.getCurrencyCode(),
+                        side
+                );
+    }
+
     public static final class Builder {
         private TradeRef tradeRef;
         private String instrumentSymbol;
