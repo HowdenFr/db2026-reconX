@@ -1,6 +1,6 @@
 # .github/CODEOWNERS
 *               @HowdenFr
-backend/        @team-lead-handle @backend-lead-handle
-frontend/       @team-lead-handle @frontend-lead-handle
+backend/        @HowdenFr @juniquereshi
+frontend/       @HowdenFr @Jmeltzer123 @juaaug20
 db/             @HowdenFr @aloraorr
-.github/        @team-lead-handle
+.github/        @HowdenFr
