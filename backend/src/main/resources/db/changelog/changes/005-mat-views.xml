@@ -19,7 +19,11 @@
 
     <changeSet id="005-mv-daily-recon-summary" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <tableExists tableName="trades"/>
+                <not><tableExists tableName="mv_daily_recon_summary"/></not>
+            </and>
         </preConditions>
         <sql splitStatements="false"><![CDATA[
             CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
@@ -39,6 +43,16 @@
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
         </rollback>
+    </changeSet>
+
+    <!-- ADV013 — materialized-view release boundary -->
+    <changeSet id="tag-release-1-2" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM databasechangelog WHERE tag = 'release-1.2'
+            </sqlCheck>
+        </preConditions>
+        <tagDatabase tag="release-1.2"/>
     </changeSet>
 
 </databaseChangeLog>
