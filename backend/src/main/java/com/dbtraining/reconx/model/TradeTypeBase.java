@@ -3,7 +3,7 @@ package com.dbtraining.reconx.model;
 import java.time.LocalDate;
 import java.util.Objects;
 
-abstract class TradeTypeBase implements TradeType {
+abstract class TradeTypeBase {
 
     private final TradeRef tradeRef;
     private final Money notional;
@@ -15,17 +15,14 @@ abstract class TradeTypeBase implements TradeType {
         this.tradeDate = Objects.requireNonNull(tradeDate, "tradeDate");
     }
 
-    @Override
     public final TradeRef tradeRef() {
         return tradeRef;
     }
 
-    @Override
     public final Money notional() {
         return notional;
     }
 
-    @Override
     public final LocalDate tradeDate() {
         return tradeDate;
     }
