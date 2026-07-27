@@ -14,7 +14,7 @@ class DerivativeTradeTest {
     @Test
     void builder_buildsExpiredOptionWhenExpiryAfterTradeDate() {
         DerivativeTrade trade = DerivativeTrade.builder()
-                .tradeRef(TradeRef.of("D-001"))
+                .tradeRef(TradeRef.of("EQU-20240101-0001"))
                 .underlying("AAPL")
                 .strike(new BigDecimal("100"))
                 .quantity(new BigDecimal("2"))
@@ -34,7 +34,7 @@ class DerivativeTradeTest {
     @Test
     void builder_expiryBeforeTradeDate_throws() {
         assertThatThrownBy(() -> DerivativeTrade.builder()
-                .tradeRef(TradeRef.of("D-002"))
+                .tradeRef(TradeRef.of("EQU-20240102-0002"))
                 .underlying("AAPL")
                 .strike(new BigDecimal("100"))
                 .quantity(new BigDecimal("2"))
