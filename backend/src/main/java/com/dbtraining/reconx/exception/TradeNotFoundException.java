@@ -5,4 +5,7 @@ public class TradeNotFoundException extends ReconException {
     public TradeNotFoundException(String tradeRef) {
         super("Trade not found: " + tradeRef);
     }
+    public TradeNotFoundException(String tradeRef, Throwable cause) {
+        super("Trade not found: " + tradeRef, cause);
+    }
 }

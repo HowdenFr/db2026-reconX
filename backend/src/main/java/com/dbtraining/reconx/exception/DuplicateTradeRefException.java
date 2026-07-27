@@ -5,4 +5,7 @@ public class DuplicateTradeRefException extends ReconException {
     public DuplicateTradeRefException(String tradeRef) {
         super("Duplicate tradeRef: " + tradeRef);
     }
+    public DuplicateTradeRefException(String tradeRef, Throwable cause) {
+        super("Duplicate tradeRef: " + tradeRef, cause);
+    }
 }
