@@ -1,5 +1,18 @@
 package com.dbtraining.reconx.model;
 
+/**
+ * WHAT:
+ * Represents a foreign exchange trade between two currencies.
+ *
+ * HOW:
+ * Constructed through the {@link Builder}, which validates required fields and
+ * business rules before creating an immutable trade instance.
+ *
+ * WHY:
+ * Provides a type-safe representation of FX transactions for reconciliation
+ * while preventing invalid currency combinations and exchange rates.
+ */
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
@@ -27,20 +40,42 @@ public final class FXTrade implements TradeType {
         this.counterpartyId = b.counterpartyId;
     }
 
+/**
+ * Creates a new builder for constructing an {@code FXTrade}.
+ *
+ * @return a new builder instance
+ */
+
     public static Builder builder() {
         return new Builder();
     }
 
+
+/**
+ * Returns the unique business reference for this trade.
+ *
+ * @return the immutable trade reference
+ */
     @Override
     public TradeRef tradeRef() {
         return tradeRef;
     }
 
+/**
+ * Returns the execution date of the trade.
+ *
+ * @return the date on which the trade occurred
+ */
+
     @Override
     public LocalDate tradeDate() {
         return tradeDate;
     }
-
+/**
+ * Returns the asset class represented by this trade.
+ *
+ * @return {@link AssetClass#FX}
+ */
     @Override
     public AssetClass assetClass() {
         return AssetClass.FX;
@@ -54,25 +89,64 @@ public final class FXTrade implements TradeType {
         return new Money(notionalCcy1.multiply(fxRate), ccy2);
     }
 
+/**
+ * Returns the base currency.
+ *
+ * @return the base currency of the FX trade
+ */
+
     public Currency ccy1() {
         return ccy1;
     }
+
+/**
+ * Returns the quote currency.
+ *
+ * @return the quote currency of the FX trade
+ */
 
     public Currency ccy2() {
         return ccy2;
     }
 
+/**
+ * Calculates the trade notional in the quote currency.
+ *
+ * <p>The returned value is calculated as
+ * {@code notionalCcy1 × fxRate} and is expressed in {@code ccy2}.</p>
+ *
+ * @return the calculated notional in the quote currency
+ */
+
     public BigDecimal notionalCcy1() {
         return notionalCcy1;
     }
+
+/**
+ * Returns the exchange rate used by this trade.
+ *
+ * @return the FX conversion rate
+ */
 
     public BigDecimal fxRate() {
         return fxRate;
     }
 
+/**
+ * Returns whether the trade is a buy or sell.
+ *
+ * @return the trade side
+ */
+
     public Side side() {
         return side;
     }
+
+/**
+ * Returns the counterparty identifier.
+ *
+ * @return the internal counterparty identifier
+ */
 
     public long counterpartyId() {
         return counterpartyId;

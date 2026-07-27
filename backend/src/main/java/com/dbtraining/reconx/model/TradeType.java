@@ -1,5 +1,34 @@
 package com.dbtraining.reconx.model;
 
+
+/**
+
+ * WHAT:
+
+ * Defines the common contract implemented by every supported trade type.
+
+ *
+
+ * HOW:
+
+ * Implemented as a sealed interface so only the approved trade implementations
+
+ * (EquityTrade, FXTrade, BondTrade, and DerivativeTrade) may participate in the
+
+ * platform's trade hierarchy.
+
+ *
+
+ * WHY:
+
+ * Provides a single, type-safe abstraction for the reconciliation engine while
+
+ * allowing the compiler to enforce exhaustive handling of all supported trade
+
+ * types.
+
+ */
+
 import java.time.LocalDate;
 import java.util.Comparator;
 
