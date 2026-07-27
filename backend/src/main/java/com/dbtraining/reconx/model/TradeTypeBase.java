@@ -3,7 +3,7 @@ package com.dbtraining.reconx.model;
 import java.time.LocalDate;
 import java.util.Objects;
 
-abstract class TradeTypeBase {
+abstract class TradeTypeBase implements TradeType {
 
     private final TradeRef tradeRef;
     private final Money notional;
