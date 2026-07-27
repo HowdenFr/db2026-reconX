@@ -3,20 +3,32 @@ package com.dbtraining.reconx.model;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+
+
 /**
- * ============================================================================
- * TICKET-ADV024 — Immutable value object: TradeRef (natural key for a trade)
+
+ * WHAT:
+
+ * Represents the unique business identifier assigned to a trade.
+
  *
- * WHAT:    Strongly-typed wrapper around the trade reference string. Format:
- *          AAA-YYYYMMDD-NNNN  (3 letters, 8-digit date, 4 digits).
- * HOW:     Compact constructor validates against the regex; null and bad
- *          formats fail at construction.
- * WHY:     A bare String "trade reference" can be confused with any other
- *          String — counterparty name, instrument symbol. TradeRef as a
- *          distinct type makes those mix-ups a compile error.
- * OBSERVE: TradeRef.of("EQU-20260602-0001") works; .of("foo") throws.
- * ============================================================================
+
+ * HOW:
+
+ * Implemented as an immutable record that validates the supplied reference
+
+ * against the platform's required format during construction.
+
+ *
+
+ * WHY:
+
+ * Encapsulating the trade reference in a dedicated value object prevents
+
+ * arbitrary strings from being used where a valid trade identifier is required.
+
  */
+
 public record TradeRef(String value) {
 
     private static final Pattern PATTERN = Pattern.compile("^[A-Z]{3}-\\d{8}-\\d{4}$");
