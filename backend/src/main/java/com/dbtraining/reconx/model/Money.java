@@ -8,17 +8,17 @@ import java.util.Objects;
  * ============================================================================
  * TICKET-ADV024 — Immutable value object: Money
  *
- * WHAT:    Record bundling a {@link BigDecimal} amount with a {@link Currency}.
- *          Used everywhere a monetary value crosses a boundary (DTO, event,
- *          metric).
- * HOW:     Compact constructor enforces: non-null amount, non-null currency,
- *          non-negative amount. {@link BigDecimal} (not double) prevents
- *          accumulating floating-point error on aggregations.
- * WHY:     Passing raw BigDecimal around loses currency context — a USD 100
- *          can be silently added to a EUR 100. Money makes the mismatch
- *          fail at the type level: {@code plus()} throws if currencies differ.
+ * WHAT: Record bundling a {@link BigDecimal} amount with a {@link Currency}.
+ * Used everywhere a monetary value crosses a boundary (DTO, event,
+ * metric).
+ * HOW: Compact constructor enforces: non-null amount, non-null currency,
+ * non-negative amount. {@link BigDecimal} (not double) prevents
+ * accumulating floating-point error on aggregations.
+ * WHY: Passing raw BigDecimal around loses currency context — a USD 100
+ * can be silently added to a EUR 100. Money makes the mismatch
+ * fail at the type level: {@code plus()} throws if currencies differ.
  * OBSERVE: {@code Money.of("100.00","USD").plus(Money.of("50","EUR"))} throws.
- *          {@code Money.of("100","USD").plus(Money.of("50","USD"))} returns 150 USD.
+ * {@code Money.of("100","USD").plus(Money.of("50","USD"))} returns 150 USD.
  * ============================================================================
  */
 public record Money(BigDecimal amount, Currency currency) {
@@ -42,12 +42,18 @@ public record Money(BigDecimal amount, Currency currency) {
     /** Add another Money of the same currency. Throws on currency mismatch. */
     public Money plus(Money other) {
         // TODO(TICKET-ADV024): validate same currency, then return a new Money
-        //                     whose amount = this.amount + other.amount.
-        throw new UnsupportedOperationException("TICKET-ADV024");
+        // whose amount = this.amount + other.amount.
+        if (!this.currency.equals(other.currency)) {
+            throw new UnsupportedOperationException("Cannot add " + this.currency + "with " + other.currency);
+        } else {
+            return new Money(this.amount.add(other.amount), this.currency);
+
+        }
     }
 
     public Money times(BigDecimal multiplier) {
-        // TODO(TICKET-ADV024): return a new Money whose amount = this.amount * multiplier.
-        throw new UnsupportedOperationException("TICKET-ADV024");
+        // TODO(TICKET-ADV024): return a new Money whose amount = this.amount *
+        // multiplier.
+        return new Money(this.amount.multiply(multiplier), this.currency);
     }
 }

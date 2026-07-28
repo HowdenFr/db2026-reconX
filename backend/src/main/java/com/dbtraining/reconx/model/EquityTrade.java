@@ -75,6 +75,41 @@ public final class EquityTrade implements TradeType {
         return counterpartyId;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return (o instanceof EquityTrade other) && tradeRef.equals(other.tradeRef);
+    }
+
+    @Override
+    public int hashCode() {
+        return tradeRef.hashCode();
+    }
+
+    // NOTE:
+// Deliberately excludes counterpartyId to prevent PII from
+// appearing in application logs.
+    @Override
+    public String toString() {
+        return """
+                EquityTrade[
+                    tradeRef=%s,
+                    instrumentSymbol=%s,
+                    quantity=%s,
+                    price=%s,
+                    currency=%s,
+                    side=%s
+                ]
+                """
+                .formatted(
+                        tradeRef,
+                        instrumentSymbol,
+                        quantity.toPlainString(),
+                        price.toPlainString(),
+                        currency.getCurrencyCode(),
+                        side
+                );
+    }
+
     public static final class Builder {
         private TradeRef tradeRef;
         private String instrumentSymbol;
