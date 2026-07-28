@@ -9,7 +9,7 @@ import java.util.Objects;
  * <p>Provides the common immutable state shared by concrete trade types,
  * including the trade reference, notional, and trade date.</p>
  */
-abstract class TradeTypeBase implements TradeType {
+abstract class TradeTypeBase {
 
     private final TradeRef tradeRef;
     private final Money notional;
