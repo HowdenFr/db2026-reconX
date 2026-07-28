@@ -1,6 +1,9 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.model.BondTrade;
+import com.dbtraining.reconx.model.DerivativeTrade;
 import com.dbtraining.reconx.model.EquityTrade;
+import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.TradeType;
 import org.springframework.stereotype.Service;
 
@@ -20,13 +23,30 @@ import java.util.stream.Collectors;
 @Service
 public class TradeAnalyticsService {
 
-    /** TICKET-ADV034 — count + sum of notional per counterparty. */
-    public Map<Long, NotionalSummary> notionalByCounterparty(List<? extends TradeType> trades) {
-        // TODO(TICKET-ADV034): Collectors.groupingBy(this::counterpartyIdOf,
-        //   Collectors.collectingAndThen(toList(), list -> new NotionalSummary(
-        //       list.size(),
-        //       list.stream().map(t -> t.notional().amount()).reduce(ZERO, BigDecimal::add)))).
-        throw new UnsupportedOperationException("TICKET-ADV034");
+    /** TICKET-ADV034 — count + sum + min + max + average of notional per counterparty. */
+    public Map<String, NotionalSummary> notionalByCounterparty(List<? extends TradeType> trades) {
+        return trades.stream().collect(Collectors.groupingBy(
+                t -> String.valueOf(counterpartyIdOf(t)),
+                Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            long count = list.size();
+                            BigDecimal total = list.stream()
+                                    .map(t -> t.notional().amount())
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            BigDecimal min = list.stream()
+                                    .map(t -> t.notional().amount())
+                                    .min(BigDecimal::compareTo)
+                                    .orElse(BigDecimal.ZERO);
+                            BigDecimal max = list.stream()
+                                    .map(t -> t.notional().amount())
+                                    .max(BigDecimal::compareTo)
+                                    .orElse(BigDecimal.ZERO);
+                            BigDecimal average = count == 0
+                                    ? BigDecimal.ZERO
+                                    : total.divide(BigDecimal.valueOf(count), 8, RoundingMode.HALF_UP);
+                            return new NotionalSummary(count, total, min, max, average);
+                        })));
     }
 
     /**
@@ -55,10 +75,17 @@ public class TradeAnalyticsService {
     }
 
     private long counterpartyIdOf(TradeType t) {
-        // TODO(TICKET-ADV018): exhaustive switch over the sealed TradeType
-        //   hierarchy returning t.counterpartyId() for each concrete subtype.
-        throw new UnsupportedOperationException("TICKET-ADV018");
+        return switch (t) {
+            case EquityTrade e                                 -> e.counterpartyId();
+            case FXTrade fx                                   -> fx.counterpartyId();
+            case BondTrade b                                  -> b.counterpartyId();
+            case DerivativeTrade d                            -> d.counterpartyId();
+        };
     }
 
-    public record NotionalSummary(long count, BigDecimal total) {}
+    public record NotionalSummary(long count,
+                                   BigDecimal total,
+                                   BigDecimal min,
+                                   BigDecimal max,
+                                   BigDecimal average) {}
 }
