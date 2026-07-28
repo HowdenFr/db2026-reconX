@@ -11,6 +11,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collector.Characteristics;
 import java.util.stream.Collectors;
 
 /**
@@ -53,12 +60,60 @@ public class TradeAnalyticsService {
      * TICKET-ADV035 — VWAP = SUM(price * qty) / SUM(qty). Equity-only — only
      * EquityTrade has a meaningful price-volume pair.
      */
+    public static Collector<EquityTrade, VwapAccumulator, BigDecimal> vwapCollector() {
+        return new VwapCollector();
+    }
+
     public Map<String, BigDecimal> vwapByInstrument(List<EquityTrade> equityTrades) {
-        // TODO(TICKET-ADV035): group by EquityTrade::instrumentSymbol, then for
-        //   each bucket compute SUM(price * qty) / SUM(qty) using BigDecimal
-        //   with RoundingMode.HALF_UP. Return BigDecimal.ZERO when totalQty is 0
-        //   (avoid ArithmeticException on division by zero).
-        throw new UnsupportedOperationException("TICKET-ADV035");
+        if (equityTrades == null) return Map.of();
+        return equityTrades.stream().collect(Collectors.groupingBy(
+                EquityTrade::instrumentSymbol,
+                new VwapCollector()
+        ));
+    }
+
+    static final class VwapAccumulator {
+        BigDecimal sumPriceQty = BigDecimal.ZERO;
+        BigDecimal sumQty = BigDecimal.ZERO;
+    }
+
+    static final class VwapCollector implements Collector<EquityTrade, VwapAccumulator, BigDecimal> {
+
+        @Override
+        public Supplier<VwapAccumulator> supplier() {
+            return VwapAccumulator::new;
+        }
+
+        @Override
+        public BiConsumer<VwapAccumulator, EquityTrade> accumulator() {
+            return (acc, t) -> {
+                acc.sumPriceQty = acc.sumPriceQty.add(t.price().multiply(t.quantity()));
+                acc.sumQty = acc.sumQty.add(t.quantity());
+            };
+        }
+
+        @Override
+        public BinaryOperator<VwapAccumulator> combiner() {
+            return (a, b) -> {
+                VwapAccumulator res = new VwapAccumulator();
+                res.sumPriceQty = a.sumPriceQty.add(b.sumPriceQty);
+                res.sumQty = a.sumQty.add(b.sumQty);
+                return res;
+            };
+        }
+
+        @Override
+        public Function<VwapAccumulator, BigDecimal> finisher() {
+            return acc -> {
+                if (acc.sumQty.signum() == 0) return BigDecimal.ZERO;
+                return acc.sumPriceQty.divide(acc.sumQty, 6, RoundingMode.HALF_UP);
+            };
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return Set.of(Characteristics.UNORDERED);
+        }
     }
 
     /** TICKET-ADV036 — P&L per instrument symbol (sign by Side). */
