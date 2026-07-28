@@ -6,10 +6,14 @@ import com.dbtraining.reconx.model.TradeType;
 import io.micrometer.core.annotation.Timed;
 import org.springframework.stereotype.Service;
 
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,6 +37,15 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ReconciliationEngine {
+
+    /**
+     * TICKET-ADV037 — bounded, named pool owned by this engine so per-counterparty
+     * reconciliation never borrows the JVM-wide common ForkJoinPool. Named threads
+     * (recon-worker-N) show up distinctly under jstack.
+     */
+    private final ExecutorService reconExecutor = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            new CustomizableThreadFactory("recon-worker-"));
 
     @Timed(value = "reconciliation.duration", description = "Wall time of reconcile()",
            percentiles = {0.5, 0.95, 0.99}, histogram = true)
@@ -68,11 +81,22 @@ public class ReconciliationEngine {
             Map<Long, List<TradeType>> internalByCp,
             Map<Long, List<TradeType>> externalByCp,
             ReconciliationRule rule) {
-        // TODO(TICKET-ADV037): for each counterparty key in internalByCp launch a
-        //   CompletableFuture.supplyAsync(() -> reconcile(...)). Combine via
-        //   CompletableFuture.allOf(...).thenApply(v -> futures.stream()
-        //       .flatMap(f -> f.join().stream()).toList()).
-        throw new UnsupportedOperationException("TICKET-ADV037");
+        List<CompletableFuture<List<ReconResult>>> futures = internalByCp.entrySet().stream()
+                .map(entry -> CompletableFuture.supplyAsync(
+                        () -> reconcile(
+                                entry.getValue(),
+                                externalByCp.getOrDefault(entry.getKey(), List.of()),
+                                rule),
+                        reconExecutor))
+                .toList();
+
+        return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .thenApply(v -> futures.stream().flatMap(f -> f.join().stream()).toList());
+    }
+
+    /** TICKET-ADV037 — releases the executor this engine owns. */
+    public void shutdown() {
+        reconExecutor.shutdown();
     }
 
     private ReconResult matchOne(TradeType internal, TradeType external, ReconciliationRule rule) {
