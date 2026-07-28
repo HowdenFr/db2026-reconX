@@ -56,4 +56,75 @@ class TradeAnalyticsServiceTest {
                 .counterpartyId(counterpartyId)
                 .build();
     }
+
+        @Test
+        void vwapCollector_computesExpected_and_parallelMatchesSerial() {
+        EquityTrade a1 = EquityTrade.builder()
+            .tradeRef(TradeRef.of("AAA-20260101-0001"))
+            .instrumentSymbol("AAA")
+            .price(new BigDecimal("10"))
+            .quantity(new BigDecimal("2"))
+            .currency("USD")
+            .side(Side.BUY)
+            .tradeDate(LocalDate.of(2026,1,1))
+            .counterpartyId(1L)
+            .build();
+
+        EquityTrade a2 = EquityTrade.builder()
+            .tradeRef(TradeRef.of("AAA-20260101-0002"))
+            .instrumentSymbol("AAA")
+            .price(new BigDecimal("12"))
+            .quantity(new BigDecimal("3"))
+            .currency("USD")
+            .side(Side.BUY)
+            .tradeDate(LocalDate.of(2026,1,1))
+            .counterpartyId(1L)
+            .build();
+
+        EquityTrade b1 = EquityTrade.builder()
+            .tradeRef(TradeRef.of("BBB-20260101-0001"))
+            .instrumentSymbol("BBB")
+            .price(new BigDecimal("5"))
+            .quantity(new BigDecimal("1"))
+            .currency("USD")
+            .side(Side.BUY)
+            .tradeDate(LocalDate.of(2026,1,1))
+            .counterpartyId(2L)
+            .build();
+
+        EquityTrade b2 = EquityTrade.builder()
+            .tradeRef(TradeRef.of("BBB-20260101-0002"))
+            .instrumentSymbol("BBB")
+            .price(new BigDecimal("7"))
+            .quantity(new BigDecimal("1"))
+            .currency("USD")
+            .side(Side.BUY)
+            .tradeDate(LocalDate.of(2026,1,1))
+            .counterpartyId(2L)
+            .build();
+
+        List<EquityTrade> trades = List.of(a1, a2, b1, b2);
+
+        // collector directly on stream (serial and parallel)
+        BigDecimal serialAaa = trades.stream()
+            .filter(t -> t.instrumentSymbol().equals("AAA"))
+            .collect(TradeAnalyticsService.vwapCollector());
+        BigDecimal parallelAaa = trades.parallelStream()
+            .filter(t -> t.instrumentSymbol().equals("AAA"))
+            .collect(TradeAnalyticsService.vwapCollector());
+
+        assertThat(serialAaa).isEqualByComparingTo(parallelAaa);
+        assertThat(serialAaa).isEqualByComparingTo(new BigDecimal("11.200000"));
+
+        // vwapByInstrument mapping
+        Map<String, BigDecimal> map = analyticsService.vwapByInstrument(trades);
+        assertThat(map.get("AAA")).isEqualByComparingTo(new BigDecimal("11.200000"));
+        assertThat(map.get("BBB")).isEqualByComparingTo(new BigDecimal("6.000000"));
+        }
+
+        @Test
+        void vwapCollector_emptyStream_returnsZero() {
+        BigDecimal result = List.<EquityTrade>of().stream().collect(TradeAnalyticsService.vwapCollector());
+        assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
+        }
 }
