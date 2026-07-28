@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -127,4 +128,92 @@ class TradeAnalyticsServiceTest {
         BigDecimal result = List.<EquityTrade>of().stream().collect(TradeAnalyticsService.vwapCollector());
         assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
         }
+
+            @Test
+            void pnlByInstrument_mixedBuySell_matchesHandCalculatedAndParallelSafe() {
+            EquityTrade t1 = EquityTrade.builder()
+                .tradeRef(TradeRef.of("AAA-20260101-1001"))
+                .instrumentSymbol("AAA")
+                .price(new BigDecimal("10"))
+                .quantity(new BigDecimal("2"))
+                .side(Side.SELL)
+                .currency("USD")
+                .tradeDate(LocalDate.of(2026,1,1))
+                .counterpartyId(1L)
+                .build(); // +20
+
+            EquityTrade t2 = EquityTrade.builder()
+                .tradeRef(TradeRef.of("AAA-20260101-1002"))
+                .instrumentSymbol("AAA")
+                .price(new BigDecimal("8"))
+                .quantity(new BigDecimal("1"))
+                .side(Side.BUY)
+                .currency("USD")
+                .tradeDate(LocalDate.of(2026,1,1))
+                .counterpartyId(1L)
+                .build(); // -8 => total 12
+
+            EquityTrade t3 = EquityTrade.builder()
+                .tradeRef(TradeRef.of("BBB-20260101-1001"))
+                .instrumentSymbol("BBB")
+                .price(new BigDecimal("5"))
+                .quantity(new BigDecimal("3"))
+                .side(Side.SELL)
+                .currency("USD")
+                .tradeDate(LocalDate.of(2026,1,1))
+                .counterpartyId(2L)
+                .build(); // +15
+
+            EquityTrade t4 = EquityTrade.builder()
+                .tradeRef(TradeRef.of("BBB-20260101-1002"))
+                .instrumentSymbol("BBB")
+                .price(new BigDecimal("6"))
+                .quantity(new BigDecimal("1"))
+                .side(Side.BUY)
+                .currency("USD")
+                .tradeDate(LocalDate.of(2026,1,1))
+                .counterpartyId(2L)
+                .build(); // -6 => total 9
+
+            EquityTrade t5 = EquityTrade.builder()
+                .tradeRef(TradeRef.of("CCC-20260101-1001"))
+                .instrumentSymbol("CCC")
+                .price(new BigDecimal("7"))
+                .quantity(new BigDecimal("2"))
+                .side(Side.BUY)
+                .currency("USD")
+                .tradeDate(LocalDate.of(2026,1,1))
+                .counterpartyId(3L)
+                .build(); // -14
+
+            EquityTrade t6 = EquityTrade.builder()
+                .tradeRef(TradeRef.of("CCC-20260101-1002"))
+                .instrumentSymbol("CCC")
+                .price(new BigDecimal("10"))
+                .quantity(new BigDecimal("1"))
+                .side(Side.SELL)
+                .currency("USD")
+                .tradeDate(LocalDate.of(2026,1,1))
+                .counterpartyId(3L)
+                .build(); // +10 => total -4
+
+            List<EquityTrade> trades = List.of(t1, t2, t3, t4, t5, t6);
+
+            Map<String, BigDecimal> serial = analyticsService.pnlByInstrument(trades);
+
+            Map<String, BigDecimal> parallel = trades.parallelStream().collect(Collectors.groupingBy(
+                EquityTrade::instrumentSymbol,
+                Collectors.mapping(t -> {
+                        BigDecimal abs = t.price().multiply(t.quantity());
+                        return t.side() == Side.SELL ? abs : abs.negate();
+                    },
+                    Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
+            ));
+
+            assertThat(serial).isEqualTo(parallel);
+
+            assertThat(serial.get("AAA")).isEqualByComparingTo(new BigDecimal("12"));
+            assertThat(serial.get("BBB")).isEqualByComparingTo(new BigDecimal("9"));
+            assertThat(serial.get("CCC")).isEqualByComparingTo(new BigDecimal("-4"));
+            }
 }
