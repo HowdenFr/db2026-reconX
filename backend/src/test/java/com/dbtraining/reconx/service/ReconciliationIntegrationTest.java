@@ -84,7 +84,7 @@ public class ReconciliationIntegrationTest {
         Instrument instrument = new Instrument();
         instrument.setSymbol("SAP.DE");
         instrument.setName("SAP SE");
-        instrument.setAssetClass("EQUITY");
+        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
         instrument.setCurrency("EUR");
         instrumentRepository.save(instrument);
 
