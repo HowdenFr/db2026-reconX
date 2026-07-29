@@ -38,4 +38,10 @@ public class Instrument {
     public String getAssetClass(){ return assetClass; }
     public String getCurrency() { return currency; }
     public String getIsin()     { return isin; }
+
+    public void setSymbol(String v)     { this.symbol = v; }
+    public void setName(String v)       { this.name = v; }
+    public void setAssetClass(String v) { this.assetClass = v; }
+    public void setCurrency(String v)   { this.currency = v; }
+    public void setIsin(String v)       { this.isin = v; }
 }

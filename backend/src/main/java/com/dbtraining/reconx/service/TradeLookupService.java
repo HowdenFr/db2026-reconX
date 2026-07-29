@@ -19,4 +19,8 @@ public class TradeLookupService {
                 .map(Trade::getCounterparty)
                 .orElseThrow(() -> new NoSuchElementException("No CounterParty for TradeRef=" + tradeRef));
     }
+
+    public Counterparty counterpartyForTradeRef(String tradeRef) {
+        return findCounterpartyByTradeRef(tradeRef);
+    }
 }
