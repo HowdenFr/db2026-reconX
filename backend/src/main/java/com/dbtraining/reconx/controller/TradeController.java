@@ -55,7 +55,7 @@ public class TradeController {
             @RequestParam(required = false) Long counterpartyId,
             @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
         // TODO(TICKET-ADV063): delegate to service.list(from, to, status, counterpartyId, pageable)
-        //   and wrap the resulting Page<Trade> via PagedResponse.from(page, mapper::toResponse).
+        //   and wrap the resulting Page<Trade> via PagedResponse.of(page, mapper::toResponse).
         //   For Day 1 return an empty PagedResponse so the React grid renders
         //   "no trades match" while the JPA + Specifications work is still pending.
         return new PagedResponse<>(List.of(), 0, 20, 0, 0);
