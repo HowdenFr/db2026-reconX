@@ -24,8 +24,8 @@ class TradeRequestValidationTest {
     void negativeQuantityProducesPositiveViolation() {
         TradeRequest request = new TradeRequest(
                 "ABC-20260727-0001",
-                2L,
                 1L,
+                2L,
                 "EQUITY",
                 "BUY",
                 new BigDecimal("-1"),
@@ -36,16 +36,16 @@ class TradeRequestValidationTest {
 
         assertThat(violations).singleElement().satisfies(violation -> {
             assertThat(violation.getPropertyPath().toString()).isEqualTo("quantity");
-            assertThat(violation.getMessage()).isEqualTo("must be greater than 0.0");
+            assertThat(violation.getMessage()).isEqualTo("must be greater than 0");
         });
     }
 
     @Test
-    void blankTradeRefProducesNotBlankViolation() {
+    void malformedTradeRefProducesPatternViolation() {
         TradeRequest request = new TradeRequest(
-                " ",
-                2L,
+                "bad-ref",
                 1L,
+                2L,
                 "EQUITY",
                 "BUY",
                 new BigDecimal("10"),
@@ -56,7 +56,7 @@ class TradeRequestValidationTest {
 
         assertThat(violations).singleElement().satisfies(violation -> {
             assertThat(violation.getPropertyPath().toString()).isEqualTo("tradeRef");
-            assertThat(violation.getMessage()).isEqualTo("must not be blank");
+            assertThat(violation.getMessage()).isEqualTo("tradeRef must match AAA-YYYYMMDD-NNNN");
         });
     }
 
@@ -64,8 +64,8 @@ class TradeRequestValidationTest {
     void futureTradeDateProducesPastOrPresentViolation() {
         TradeRequest request = new TradeRequest(
                 "ABC-20260727-0001",
-                2L,
                 1L,
+                2L,
                 "EQUITY",
                 "BUY",
                 new BigDecimal("10"),
@@ -83,8 +83,8 @@ class TradeRequestValidationTest {
     private TradeRequest validRequest() {
         return new TradeRequest(
                 "ABC-20260727-0001",
-                2L,
                 1L,
+                2L,
                 "EQUITY",
                 "BUY",
                 new BigDecimal("10"),
