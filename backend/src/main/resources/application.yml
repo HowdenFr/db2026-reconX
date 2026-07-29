@@ -96,7 +96,7 @@ reconx:
   security:
     jwt:
       # dev secret only — UAT/PROD MUST override via env var
-      secret: ${JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
+      secret: ${APP_JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
       expiration-minutes: ${JWT_EXP_MIN:60}
       refresh-expiration-days: ${JWT_REFRESH_EXP_DAYS:7}
       issuer: reconx
