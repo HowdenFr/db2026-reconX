@@ -43,8 +43,9 @@ public class ReconciliationIntegrationTest {
         r.add("spring.datasource.url", postgres::getJdbcUrl);
         r.add("spring.datasource.username", postgres::getUsername);
         r.add("spring.datasource.password", postgres::getPassword);
-        // The default (dev) profile hardcodes H2Dialect; override it since we're
-        // actually running against real Postgres here.
+        // The default (dev) profile hardcodes the H2 driver and dialect; override
+        // both since we're actually running against real Postgres here.
+        r.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         r.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.dialect.PostgreSQLDialect");
     }
 
