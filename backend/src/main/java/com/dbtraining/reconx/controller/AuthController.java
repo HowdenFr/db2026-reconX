@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,10 +38,28 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Exchange email + password for a JWT")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
-        // TODO(TICKET-ADV072): look up the user by email, verify BCrypt password,
-        //   then call jwt.generate(email, role) and return a LoginResponse.
-        //   Reject with InvalidTradeException("Invalid credentials") on any mismatch
-        //   (do NOT leak whether the email or the password was the problem).
-        throw new UnsupportedOperationException("TICKET-ADV072");
+        AppUser user = users.findByEmail(req.email())
+                .orElseThrow(() -> new InvalidTradeException("Invalid credentials"));
+
+        if (!Boolean.TRUE.equals(user.getEnabled())
+                || !encoder.matches(req.password(), user.getPasswordHash())) {
+            throw new InvalidTradeException("Invalid credentials");
+        }
+
+        String token = jwt.generate(user.getEmail(), user.getRole());
+        LoginResponse response = new LoginResponse(
+                token,
+                "Bearer",
+                jwt.expirationSeconds(),
+                user.getRole());
+        return ResponseEntity.ok(response);
+    }
+
+    @ExceptionHandler(InvalidTradeException.class)
+    public ResponseEntity<ProblemDetail> invalidCredentials(InvalidTradeException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
     }
 }
