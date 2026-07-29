@@ -26,6 +26,8 @@ class TradeRequestValidationTest {
                 "ABC-20260727-0001",
                 2L,
                 1L,
+                "EQUITY",
+                "BUY",
                 new BigDecimal("-1"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 27));
@@ -44,6 +46,8 @@ class TradeRequestValidationTest {
                 " ",
                 2L,
                 1L,
+                "EQUITY",
+                "BUY",
                 new BigDecimal("10"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 27));
@@ -62,6 +66,8 @@ class TradeRequestValidationTest {
                 "ABC-20260727-0001",
                 2L,
                 1L,
+                "EQUITY",
+                "BUY",
                 new BigDecimal("10"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 30));
@@ -79,6 +85,8 @@ class TradeRequestValidationTest {
                 "ABC-20260727-0001",
                 2L,
                 1L,
+                "EQUITY",
+                "BUY",
                 new BigDecimal("10"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 27));

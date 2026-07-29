@@ -12,6 +12,8 @@ public record TradeRequest(
         @NotBlank String tradeRef,
         @NotNull Long counterpartyId,
         @NotNull Long instrumentId,
+        @NotBlank String assetClass,
+        @NotBlank String side,
         @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal quantity,
         @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal price,
         @NotNull @PastOrPresent LocalDate tradeDate
