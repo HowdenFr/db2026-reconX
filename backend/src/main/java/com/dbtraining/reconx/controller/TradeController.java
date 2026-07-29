@@ -52,9 +52,10 @@ public class TradeController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String counterparty,
             @RequestParam(required = false) Long counterpartyId,
             @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<Trade> page = service.list(from, to, status, counterpartyId, pageable);
+        Page<Trade> page = service.list(from, to, status, counterpartyId, counterparty, pageable);
         return PagedResponse.of(page, mapper::toResponse);
     }
 

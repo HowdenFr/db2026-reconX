@@ -30,6 +30,7 @@ class PagedResponseTest {
         assertThat(response.size()).isEqualTo(2);
         assertThat(response.totalElements()).isEqualTo(2);
         assertThat(response.totalPages()).isEqualTo(1);
+        assertThat(response.last()).isTrue();
     }
 
     private Trade trade(String tradeRef) {
