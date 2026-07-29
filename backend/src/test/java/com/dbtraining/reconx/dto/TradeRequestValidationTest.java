@@ -24,10 +24,8 @@ class TradeRequestValidationTest {
     void negativeQuantityProducesPositiveViolation() {
         TradeRequest request = new TradeRequest(
                 "ABC-20260727-0001",
-                1L,
                 2L,
-                "EQUITY",
-                "BUY",
+                1L,
                 new BigDecimal("-1"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 27));
@@ -36,18 +34,16 @@ class TradeRequestValidationTest {
 
         assertThat(violations).singleElement().satisfies(violation -> {
             assertThat(violation.getPropertyPath().toString()).isEqualTo("quantity");
-            assertThat(violation.getMessage()).isEqualTo("must be greater than 0");
+            assertThat(violation.getMessage()).isEqualTo("must be greater than 0.0");
         });
     }
 
     @Test
-    void malformedTradeRefProducesPatternViolation() {
+    void blankTradeRefProducesNotBlankViolation() {
         TradeRequest request = new TradeRequest(
-                "foo",
-                1L,
+                " ",
                 2L,
-                "EQUITY",
-                "BUY",
+                1L,
                 new BigDecimal("10"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 27));
@@ -56,18 +52,33 @@ class TradeRequestValidationTest {
 
         assertThat(violations).singleElement().satisfies(violation -> {
             assertThat(violation.getPropertyPath().toString()).isEqualTo("tradeRef");
-            assertThat(violation.getMessage())
-                    .isEqualTo("tradeRef must match AAA-YYYYMMDD-NNNN");
+            assertThat(violation.getMessage()).isEqualTo("must not be blank");
+        });
+    }
+
+    @Test
+    void futureTradeDateProducesPastOrPresentViolation() {
+        TradeRequest request = new TradeRequest(
+                "ABC-20260727-0001",
+                2L,
+                1L,
+                new BigDecimal("10"),
+                new BigDecimal("100.00"),
+                LocalDate.of(2026, 7, 30));
+
+        Set<ConstraintViolation<TradeRequest>> violations = validator.validate(request);
+
+        assertThat(violations).singleElement().satisfies(violation -> {
+            assertThat(violation.getPropertyPath().toString()).isEqualTo("tradeDate");
+            assertThat(violation.getMessage()).isEqualTo("must be a date in the past or in the present");
         });
     }
 
     private TradeRequest validRequest() {
         return new TradeRequest(
                 "ABC-20260727-0001",
-                1L,
                 2L,
-                "EQUITY",
-                "BUY",
+                1L,
                 new BigDecimal("10"),
                 new BigDecimal("100.00"),
                 LocalDate.of(2026, 7, 27));
