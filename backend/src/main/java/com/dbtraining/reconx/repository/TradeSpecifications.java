@@ -47,6 +47,14 @@ public final class TradeSpecifications {
                 : cb.equal(root.get("counterparty").get("id"), counterpartyId);
     }
 
+    public static Specification<Trade> forCounterpartyName(String counterparty) {
+        return (root, q, cb) -> counterparty == null || counterparty.isBlank()
+                ? cb.conjunction()
+                : cb.like(
+                        cb.lower(root.get("counterparty").get("name")),
+                        "%" + counterparty.toLowerCase() + "%");
+    }
+
     public static Specification<Trade> refLike(String pattern) {
         return (root, q, cb) -> pattern == null || pattern.isBlank()
                 ? cb.conjunction()
