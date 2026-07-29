@@ -1,0 +1,10 @@
+com\dbtraining\reconx\model\ReconciliationRuleTest.class
+com\dbtraining\reconx\service\ReconciliationEngineTest.class
+com\dbtraining\reconx\service\ReconciliationServiceTest.class
+com\dbtraining\reconx\model\DerivativeTradeTest.class
+com\dbtraining\reconx\service\TradeAnalyticsServiceTest.class
+com\dbtraining\reconx\model\TradeTypeOrderingTest.class
+com\dbtraining\reconx\service\ReconciliationIntegrationTest.class
+com\dbtraining\reconx\dto\TradeRequestValidationTest.class
+com\dbtraining\reconx\model\EquityTradeTest.class
+com\dbtraining\reconx\model\TradeEqualityTest.class

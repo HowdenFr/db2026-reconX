@@ -2,13 +2,15 @@
 <!--
  ============================================================================
  TICKET-ADV008 — Materialised view mv_daily_recon_summary
- WHAT:    Daily aggregate of matched/break counts + total notional, used by
-          the dashboard's "today at a glance" cards.
+ WHAT:    Daily aggregate of matched trades, open breaks, notional, and match
+          rate by trade_date/region/asset_class, used by the dashboard's
+          "today at a glance" cards.
  HOW:     REFRESH MATERIALIZED VIEW CONCURRENTLY (requires unique index).
           Scheduled refresh is done by a cron job (not shown — Day 6 task).
  WHY:     Computing daily stats over a partitioned 50M-row table at every
           dashboard load is 600ms+; the matview is 5ms.
- OBSERVE: SELECT * FROM mv_daily_recon_summary returns one row per day.
+ OBSERVE: SELECT * FROM mv_daily_recon_summary returns one row per
+          (trade_date, region, asset_class).
  ============================================================================
 -->
 <databaseChangeLog
@@ -19,26 +21,48 @@
 
     <changeSet id="005-mv-daily-recon-summary" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <tableExists tableName="trades"/>
+                <not><tableExists tableName="mv_daily_recon_summary"/></not>
+            </and>
         </preConditions>
         <sql splitStatements="false"><![CDATA[
             CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
             SELECT
-                trade_date,
-                COUNT(*)                                          AS total_trades,
-                COUNT(*) FILTER (WHERE status = 'MATCHED')        AS matched_trades,
-                COUNT(*) FILTER (WHERE status IN ('UNMATCHED','DISPUTED')) AS break_trades,
-                COALESCE(SUM(quantity * price), 0)                AS total_notional
-            FROM trades
-            WHERE deleted_at IS NULL
-            GROUP BY trade_date;
+                t.trade_date,
+                c.region,
+                t.asset_class,
+                COUNT(*)                                                  AS total_trades,
+                COUNT(*) FILTER (WHERE t.status = 'MATCHED')              AS matched_trades,
+                COUNT(DISTINCT rb.id) FILTER (WHERE rb.status = 'OPEN')   AS open_breaks,
+                ROUND(COALESCE(SUM(t.quantity * t.price), 0)::NUMERIC, 2) AS gross_notional,
+                ROUND(
+                    100.0 * COUNT(*) FILTER (WHERE t.status = 'MATCHED')
+                        / NULLIF(COUNT(*), 0),
+                2)                                                        AS match_rate_pct
+            FROM trades t
+            JOIN counterparties c ON c.id = t.counterparty_id
+            LEFT JOIN recon_breaks rb ON rb.trade_id = t.id
+            WHERE t.deleted_at IS NULL
+            GROUP BY t.trade_date, c.region, t.asset_class;
 
-            CREATE UNIQUE INDEX uq_mv_daily_recon_summary_trade_date
-                ON mv_daily_recon_summary (trade_date);
+            CREATE UNIQUE INDEX uq_mv_daily_recon_summary
+                ON mv_daily_recon_summary (trade_date, region, asset_class);
         ]]></sql>
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
         </rollback>
+    </changeSet>
+
+    <!-- ADV013 — materialized-view release boundary -->
+    <changeSet id="tag-release-1-2" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM databasechangelog WHERE tag = 'release-1.2'
+            </sqlCheck>
+        </preConditions>
+        <tagDatabase tag="release-1.2"/>
     </changeSet>
 
 </databaseChangeLog>

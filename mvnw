@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 set -e
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-exec "$SCRIPT_DIR/backend/mvnw" "$@"
+cd "$SCRIPT_DIR/backend"
+exec "./mvnw" "$@"
