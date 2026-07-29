@@ -1,6 +1,8 @@
 package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
+import com.dbtraining.reconx.service.ReconSummary;
+import com.dbtraining.reconx.service.ReconSummaryCollector;
 import com.dbtraining.reconx.model.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +41,7 @@ class ReconciliationEngineTest {
     }
 
     @ParameterizedTest(name = "price diff {0} stays within 1% tolerance -> MATCHED")
-    @ValueSource(strings = {"0.10", "0.50", "0.99"})
+    @ValueSource(strings = { "0.10", "0.50", "0.99" })
     void testReconcile_priceTolerance_withinThreshold(String diff) {
         BigDecimal basePrice = new BigDecimal("100.00");
         BigDecimal externalPrice = basePrice.add(new BigDecimal(diff));
@@ -75,9 +77,45 @@ class ReconciliationEngineTest {
     }
 
     @Test
+    @DisplayName("Empty internal list returns an empty reconciliation result")
     void testReconcile_emptyInternal_returnsEmpty() {
-        // TODO(TICKET-ADV040): empty internal + empty external -> reconcile returns an empty list.
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+        // Given
+
+        // When
+        List<ReconResult> out = engine.reconcile(
+                List.of(),
+                List.of(),
+                ReconciliationRule.EXACT);
+
+        // Then
+        assertThat(out).isEmpty();
+    }
+
+    @Test
+    @DisplayName("All mismatched trades produce a broken reconciliation summary")
+    void testReconcile_allMismatched_returnsBrokenSummary() {
+        // Given
+        EquityTrade internal1 = equity("EQU-20260603-0101", "100.00", "1000");
+        EquityTrade internal2 = equity("EQU-20260603-0102", "200.00", "1000");
+        EquityTrade internal3 = equity("EQU-20260603-0103", "300.00", "1000");
+
+        EquityTrade external1 = equity("EQU-20260603-0201", "100.00", "1000");
+        EquityTrade external2 = equity("EQU-20260603-0202", "200.00", "1000");
+        EquityTrade external3 = equity("EQU-20260603-0203", "300.00", "1000");
+
+        // When
+        List<ReconResult> out = engine.reconcile(
+                List.of(internal1, internal2, internal3),
+                List.of(external1, external2, external3),
+                ReconciliationRule.EXACT);
+
+        ReconSummary summary = out.stream()
+                .collect(new ReconSummaryCollector());
+
+        // Then
+        assertThat(summary.total()).isEqualTo(3);
+        assertThat(summary.matched()).isEqualTo(0);
+        assertThat(summary.broken()).isEqualTo(3);
     }
 
     private EquityTrade equity(String ref, String price, String qty) {
