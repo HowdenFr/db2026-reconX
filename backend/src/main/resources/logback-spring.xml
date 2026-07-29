@@ -1,0 +1,41 @@
+<!--Ticket 61 
+What
+
+backend/api/src/main/resources/logback-spring.xml with 
+two <springProfile> blocks (plain pattern for dev, 
+LogstashEncoder JSON for uat,prod) plus a 
+@Component @Order(1) MdcFilter implements Filter that 
+puts X-Correlation-Id / X-Trade-Ref into MDC and clears
+it in finally.
+
+Why:
+
+Day 6's Kafka consumer, Day 8's recon engine, and 
+Day 10's Docker Compose stack all share the same 
+request — without a correlation id stitched through MDC, 
+tracing a single trade across services becomes log 
+archaeology, and the finally clear is what stops the id 
+leaking into the next request on the same Tomcat thread.
+-->
+<configuration>
+    <springProfile name="uat,prod">
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+                <includeMdc>true</includeMdc>
+                <customFields>"service":"reconx-api"</customFields>
+            </encoder>
+        </appender>
+    </springProfile>
+
+<SpringProfile name="dev">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{correlationId:-} %X{tradeRef:-} %logger{36} - %msg%n </pattern>
+        </encoder>
+    </appender>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
