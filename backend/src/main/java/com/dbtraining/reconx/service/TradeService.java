@@ -45,10 +45,10 @@ public class TradeService {
     private final TradeMetrics metrics;
 
     public TradeService(TradeRepository tradeRepo,
-                        CounterpartyRepository cpRepo,
-                        InstrumentRepository instRepo,
-                        TradeEventProducer events,
-                        TradeMetrics metrics) {
+            CounterpartyRepository cpRepo,
+            InstrumentRepository instRepo,
+            TradeEventProducer events,
+            TradeMetrics metrics) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
@@ -57,31 +57,57 @@ public class TradeService {
     }
 
     public Trade create(TradeRequest req, String actor) {
-        // TODO(TICKET-ADV064): reject duplicate tradeRef via DuplicateTradeRefException,
-        //   build a new Trade with instrument + counterparty looked up from
-        //   their repos (throw TradeNotFoundException on miss), status = "PENDING",
-        //   save, then:
-        //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
-        //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
+        // TODO(TICKET-ADV064): reject duplicate tradeRef via
+        // DuplicateTradeRefException,
+        // build a new Trade with instrument + counterparty looked up from
+        // their repos (throw TradeNotFoundException on miss), status = "PENDING",
+        // save, then:
+        // - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) —
+        // TICKET-ADV083
+        // - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) —
+        // TICKET-ADV129
         throw new UnsupportedOperationException("TICKET-ADV064");
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
         // TODO(TICKET-ADV065): load by id (throw TradeNotFoundException if missing),
-        //   copy mutable fields from req, save, publish a TRADE_UPDATED event.
+        // copy mutable fields from req, save, publish a TRADE_UPDATED event.
         throw new UnsupportedOperationException("TICKET-ADV065");
     }
 
     public Trade updateStatus(Long id, String status, String actor) {
-        // TODO(TICKET-ADV066): load, setStatus(status), save, publish TRADE_UPDATED
-        //   with the new status in the "after" slot of the event.
-        throw new UnsupportedOperationException("TICKET-ADV066");
+        Trade trade = tradeRepo.findById(id).orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
+        String before = trade.getStatus().name();
+        TradeStatus newStatus = TradeStatus.valueOf(status);
+        trade.setStatus(newStatus);
+        Trade saved = tradeRepo.save(trade);
+        events.publish(new TradeEvent(
+                UUID.randomUUID(),
+                saved.getTradeRef(),
+                TradeEvent.EventType.TRADE_UPDATED,
+                Instant.now(),
+                actor,
+                before,
+                saved.getStatus().name()));
+        return saved;
     }
 
     public void softDelete(Long id, String actor) {
         // TODO(TICKET-ADV067): load, call t.softDelete() (sets deleted_at), save,
-        //   publish a TRADE_CANCELLED event.
-        throw new UnsupportedOperationException("TICKET-ADV067");
+        // publish a TRADE_CANCELLED event.
+        Trade trade = tradeRepo.findById(id).orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
+
+        trade.softDelete();
+        Trade saved = tradeRepo.save(trade);
+        events.publish(new TradeEvent(
+                UUID.randomUUID(),
+                saved.getTradeRef(),
+                TradeEvent.EventType.TRADE_CANCELLED,
+                Instant.now(),
+                actor,
+                null,
+                null));
+
     }
 
     @Transactional(readOnly = true)
