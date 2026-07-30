@@ -70,16 +70,9 @@ public class ReconController {
     public ResponseEntity<ReconBreak> resolve(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
-
         ReconBreak reconBreak = breaks.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("Recon break not found: " + id));
-
-        String note = body.get("note");
-
-        reconBreak.resolve(note);
-
-        breaks.save(reconBreak);
-
-        return ResponseEntity.ok(reconBreak);
+        reconBreak.resolve(body.get("note"));
+        return ResponseEntity.ok(breaks.save(reconBreak));
     }
 }
