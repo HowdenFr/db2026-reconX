@@ -88,7 +88,7 @@ class TradeControllerTest {
                 PageRequest.of(0, 20, Sort.by(Sort.Order.desc("createdAt"))),
                 1);
 
-        when(tradeService.list(any(), any(), anyString(), anyLong(), any(Pageable.class)))
+        when(tradeService.list(any(), any(), anyString(), anyLong(), any(), any(Pageable.class)))
                 .thenReturn(page);
         when(tradeMapper.toResponse(trade)).thenReturn(response);
 
@@ -97,14 +97,14 @@ class TradeControllerTest {
                         .param("counterpartyId", "20")
                         .param("sort", "createdAt,desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].tradeRef").value("EQU-20260729-1001"))
+                .andExpect(jsonPath("$.content[0].tradeRef").value("EQU-20260729-1001"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(tradeService).list(eq(null), eq(null), eq("PENDING"), eq(20L), pageableCaptor.capture());
+        verify(tradeService).list(eq(null), eq(null), eq("PENDING"), eq(20L), eq(null), pageableCaptor.capture());
 
         Pageable pageable = pageableCaptor.getValue();
         assertThat(pageable.getSort().getOrderFor("createdAt")).isNotNull();
@@ -113,12 +113,12 @@ class TradeControllerTest {
 
     @Test
     void list_withOnlyStatusFilterStillReturnsOk() throws Exception {
-        when(tradeService.list(any(), any(), anyString(), any(), any(Pageable.class)))
+        when(tradeService.list(any(), any(), anyString(), any(), any(), any(Pageable.class)))
                 .thenReturn(Page.empty(PageRequest.of(0, 20, Sort.by(Sort.Order.desc("tradeDate")))));
 
         mockMvc.perform(get("/v1/trades").param("status", "PENDING"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(0))
@@ -176,6 +176,7 @@ class TradeControllerTest {
 
     @Test
     void create_invalidRequest_returnsBadRequestProblemDetail() throws Exception {
+        String futureTradeDate = LocalDate.now().plusDays(1).toString();
         mockMvc.perform(post("/v1/trades")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -186,9 +187,9 @@ class TradeControllerTest {
                                   "side":"BUY",
                                   "quantity":-5,
                                   "price":245.50,
-                                  "tradeDate":"2026-07-30"
+                                  "tradeDate":"%s"
                                 }
-                                """))
+                                """.formatted(futureTradeDate)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(

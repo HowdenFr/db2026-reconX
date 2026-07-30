@@ -89,4 +89,35 @@
         </rollback>
     </changeSet>
 
+    <!-- TICKET-ADV078 relies on one pre-existing trade + recon break (id=1)
+         to exercise PUT /v1/recon/results/{id}/resolve without first running
+         a real reconciliation job. -->
+    <changeSet id="008-seed-recon-break" author="trainer" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM recon_breaks
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="trades">
+            <column name="trade_ref" value="SEED-20260301-0001"/>
+            <column name="instrument_id" valueNumeric="1"/>
+            <column name="counterparty_id" valueNumeric="1"/>
+            <column name="asset_class" value="EQUITY"/>
+            <column name="side" value="BUY"/>
+            <column name="quantity" valueNumeric="100.0000"/>
+            <column name="price" valueNumeric="245.50"/>
+            <column name="trade_date" valueDate="2026-03-01"/>
+            <column name="status" value="BREAK"/>
+        </insert>
+        <insert tableName="recon_breaks">
+            <column name="trade_id" valueComputed="(SELECT id FROM trades WHERE trade_ref = 'SEED-20260301-0001')"/>
+            <column name="discrepancy_type" value="PRICE_MISMATCH"/>
+            <column name="status" value="OPEN"/>
+        </insert>
+        <rollback>
+            <sql>DELETE FROM recon_breaks WHERE discrepancy_type = 'PRICE_MISMATCH';</sql>
+            <sql>DELETE FROM trades WHERE trade_ref = 'SEED-20260301-0001';</sql>
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>
