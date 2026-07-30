@@ -26,6 +26,10 @@ spring:
     init:
       mode: never
 
+  # ADV096 — JMX beans (ReconConfigMBean) for runtime toggles.
+  jmx:
+    enabled: true
+
   jpa:
     open-in-view: false
     hibernate:
@@ -72,7 +76,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,env,loggers
+        include: health,info,metrics,prometheus,env,loggers,beans
       base-path: /actuator
   endpoint:
     health:

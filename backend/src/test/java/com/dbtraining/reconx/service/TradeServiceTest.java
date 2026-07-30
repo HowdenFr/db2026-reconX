@@ -3,6 +3,7 @@ package com.dbtraining.reconx.service;
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
@@ -116,9 +117,143 @@ class TradeServiceTest {
         verify(events, never()).publish(any(TradeEvent.class));
     }
 
+    @Test
+    void update_overwritesMutableFieldsAndPublishesEvent() throws Exception {
+        Trade existing = new Trade();
+        setId(existing, 42L);
+        existing.setTradeRef("TRD-20260315-0001");
+        existing.setAssetClass("FX");
+        existing.setSide("SELL");
+        existing.setQuantity(new BigDecimal("20.0"));
+        existing.setPrice(new BigDecimal("200.00"));
+        existing.setTradeDate(LocalDate.of(2026, 3, 14));
+        existing.setStatus(TradeStatus.PENDING);
+
+        Instrument instrument = new Instrument();
+        setId(instrument, 1L);
+        instrument.setSymbol("SAP.DE");
+        Counterparty counterparty = new Counterparty();
+        setId(counterparty, 2L);
+        counterparty.setName("Apex Clearing");
+        existing.setInstrument(instrument);
+        existing.setCounterparty(counterparty);
+
+        TradeRequest request = new TradeRequest(
+                "TRD-20260315-0001",
+                1L,
+                2L,
+                "EQUITY",
+                "BUY",
+                new BigDecimal("150.0"),
+                new BigDecimal("250.00"),
+                LocalDate.of(2026, 3, 15));
+
+        when(tradeRepo.findById(42L)).thenReturn(Optional.of(existing));
+        when(instRepo.findById(1L)).thenReturn(Optional.of(instrument));
+        when(cpRepo.findById(2L)).thenReturn(Optional.of(counterparty));
+        when(tradeRepo.save(existing)).thenReturn(existing);
+
+        Trade updated = tradeService.update(42L, request, "alice");
+
+        assertThat(updated.getTradeRef()).isEqualTo("TRD-20260315-0001");
+        assertThat(updated.getInstrument()).isSameAs(instrument);
+        assertThat(updated.getCounterparty()).isSameAs(counterparty);
+        assertThat(updated.getAssetClass()).isEqualTo("EQUITY");
+        assertThat(updated.getSide()).isEqualTo("BUY");
+        assertThat(updated.getQuantity()).isEqualByComparingTo("150.0");
+        assertThat(updated.getPrice()).isEqualByComparingTo("250.00");
+        assertThat(updated.getTradeDate()).isEqualTo(LocalDate.of(2026, 3, 15));
+        assertThat(updated.getStatus()).isEqualTo(TradeStatus.PENDING);
+
+        ArgumentCaptor<TradeEvent> eventCaptor = ArgumentCaptor.forClass(TradeEvent.class);
+        verify(events).publish(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().tradeRef()).isEqualTo("TRD-20260315-0001");
+        assertThat(eventCaptor.getValue().eventType()).isEqualTo(TradeEvent.EventType.TRADE_UPDATED);
+        assertThat(eventCaptor.getValue().actor()).isEqualTo("alice");
+        assertThat(eventCaptor.getValue().before()).isEqualTo("PENDING");
+        assertThat(eventCaptor.getValue().after()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void update_identicalRequest_isNoOpAndDoesNotPublishDuplicateEvent() throws Exception {
+        Trade existing = new Trade();
+        setId(existing, 42L);
+        existing.setTradeRef("TRD-20260315-0001");
+        existing.setAssetClass("EQUITY");
+        existing.setSide("BUY");
+        existing.setQuantity(new BigDecimal("150.00"));
+        existing.setPrice(new BigDecimal("250.0"));
+        existing.setTradeDate(LocalDate.of(2026, 3, 15));
+        existing.setStatus(TradeStatus.PENDING);
+
+        Instrument instrument = new Instrument();
+        setId(instrument, 1L);
+        instrument.setSymbol("SAP.DE");
+        existing.setInstrument(instrument);
+
+        Counterparty counterparty = new Counterparty();
+        setId(counterparty, 2L);
+        counterparty.setName("Apex Clearing");
+        existing.setCounterparty(counterparty);
+
+        TradeRequest request = new TradeRequest(
+                "TRD-20260315-0001",
+                1L,
+                2L,
+                "EQUITY",
+                "BUY",
+                new BigDecimal("150.0"),
+                new BigDecimal("250.00"),
+                LocalDate.of(2026, 3, 15));
+
+        when(tradeRepo.findById(42L)).thenReturn(Optional.of(existing));
+        when(instRepo.findById(1L)).thenReturn(Optional.of(instrument));
+        when(cpRepo.findById(2L)).thenReturn(Optional.of(counterparty));
+
+        Trade updated = tradeService.update(42L, request, "alice");
+
+        assertThat(updated).isSameAs(existing);
+        verify(tradeRepo, never()).save(any(Trade.class));
+        verify(events, never()).publish(any(TradeEvent.class));
+    }
+
+    @Test
+    void update_missingTrade_throwsNotFoundException() {
+        TradeRequest request = new TradeRequest(
+                "TRD-20260315-0001",
+                1L,
+                2L,
+                "EQUITY",
+                "BUY",
+                new BigDecimal("150.0"),
+                new BigDecimal("250.00"),
+                LocalDate.of(2026, 3, 15));
+
+        when(tradeRepo.findById(9999999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> tradeService.update(9999999L, request, "alice"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessage("Trade not found: 9999999");
+
+        verify(tradeRepo, never()).save(any(Trade.class));
+        verify(events, never()).publish(any(TradeEvent.class));
+    }
+
     private static void setId(Trade trade, Long id) throws Exception {
         Field field = Trade.class.getDeclaredField("id");
         field.setAccessible(true);
         field.set(trade, id);
+    }
+
+    private static void setId(Instrument instrument, Long id) throws Exception {
+        Field field = Instrument.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(instrument, id);
+    }
+
+    private static void setId(Counterparty counterparty, Long id) throws Exception {
+        Field field = Counterparty.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(counterparty, id);
     }
 }

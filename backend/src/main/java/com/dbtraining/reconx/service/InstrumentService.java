@@ -15,16 +15,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class InstrumentService {
 
+    // Service Talks to The Repository/Not the DataBase Directly
     private final InstrumentRepository repo;
 
-    public InstrumentService(InstrumentRepository repo) { this.repo = repo; }
+    public InstrumentService(InstrumentRepository repo) {
+        this.repo = repo;
+    }
+
+    // Important Part | Talks to the Cache Before Checking the Database
 
     @Cacheable("instruments")
     public Instrument findBySymbol(String symbol) {
-        // TODO(TICKET-ADV081): return repo.findBySymbol(symbol)
-        //   .orElseThrow(() -> new InvalidTradeException("Unknown instrument symbol: " + symbol)).
-        //   The @Cacheable annotation above is what makes the second call cheap —
-        //   verify the cache hit-rate via /actuator/caches once you wire this up.
-        throw new UnsupportedOperationException("TICKET-ADV081");
+
+        return repo.findBySymbol(symbol)
+                .orElseThrow(() -> new InvalidTradeException("Unknown instrument symbol: " + symbol));
+
     }
 }

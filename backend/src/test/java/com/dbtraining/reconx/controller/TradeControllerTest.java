@@ -4,6 +4,7 @@ import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
 import com.dbtraining.reconx.service.TradeService;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,7 +90,7 @@ class TradeControllerTest {
                 PageRequest.of(0, 20, Sort.by(Sort.Order.desc("createdAt"))),
                 1);
 
-        when(tradeService.list(any(), any(), anyString(), anyLong(), any(Pageable.class)))
+        when(tradeService.list(any(), any(), anyString(), anyLong(), any(), any(Pageable.class)))
                 .thenReturn(page);
         when(tradeMapper.toResponse(trade)).thenReturn(response);
 
@@ -97,14 +99,14 @@ class TradeControllerTest {
                         .param("counterpartyId", "20")
                         .param("sort", "createdAt,desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].tradeRef").value("EQU-20260729-1001"))
+                .andExpect(jsonPath("$.content[0].tradeRef").value("EQU-20260729-1001"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(tradeService).list(eq(null), eq(null), eq("PENDING"), eq(20L), pageableCaptor.capture());
+        verify(tradeService).list(eq(null), eq(null), eq("PENDING"), eq(20L), eq(null), pageableCaptor.capture());
 
         Pageable pageable = pageableCaptor.getValue();
         assertThat(pageable.getSort().getOrderFor("createdAt")).isNotNull();
@@ -113,12 +115,12 @@ class TradeControllerTest {
 
     @Test
     void list_withOnlyStatusFilterStillReturnsOk() throws Exception {
-        when(tradeService.list(any(), any(), anyString(), any(), any(Pageable.class)))
+        when(tradeService.list(any(), any(), anyString(), any(), any(), any(Pageable.class)))
                 .thenReturn(Page.empty(PageRequest.of(0, 20, Sort.by(Sort.Order.desc("tradeDate")))));
 
         mockMvc.perform(get("/v1/trades").param("status", "PENDING"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(0))
@@ -176,6 +178,7 @@ class TradeControllerTest {
 
     @Test
     void create_invalidRequest_returnsBadRequestProblemDetail() throws Exception {
+        String futureTradeDate = LocalDate.now().plusDays(1).toString();
         mockMvc.perform(post("/v1/trades")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -186,15 +189,96 @@ class TradeControllerTest {
                                   "side":"BUY",
                                   "quantity":-5,
                                   "price":245.50,
-                                  "tradeDate":"2026-07-30"
+                                  "tradeDate":"%s"
                                 }
-                                """))
+                                """.formatted(futureTradeDate)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.allOf(
                         org.hamcrest.Matchers.containsString("tradeRef"),
                         org.hamcrest.Matchers.containsString("quantity"),
                         org.hamcrest.Matchers.containsString("tradeDate"))));
+    }
+
+    @Test
+    void update_validRequest_returnsUpdatedRepresentation() throws Exception {
+        Trade updated = new Trade();
+        setId(updated, 42L);
+        updated.setTradeRef("TRD-20260315-0001");
+
+        TradeResponse response = new TradeResponse(
+                42L,
+                "TRD-20260315-0001",
+                1L,
+                "SAP.DE",
+                2L,
+                "Apex Clearing",
+                "EQUITY",
+                "BUY",
+                new BigDecimal("150.0"),
+                new BigDecimal("250.00"),
+                LocalDate.of(2026, 3, 15),
+                "PENDING",
+                Instant.parse("2026-03-15T10:15:30Z"),
+                Instant.parse("2026-03-15T10:20:30Z"));
+
+        when(tradeService.update(anyLong(), any(TradeRequest.class), anyString())).thenReturn(updated);
+        when(tradeMapper.toResponse(updated)).thenReturn(response);
+
+        String body = """
+                {
+                  "tradeRef":"TRD-20260315-0001",
+                  "instrumentId":1,
+                  "counterpartyId":2,
+                  "assetClass":"EQUITY",
+                  "side":"BUY",
+                  "quantity":150.0,
+                  "price":250.00,
+                  "tradeDate":"2026-03-15"
+                }
+                """;
+
+        mockMvc.perform(put("/v1/trades/42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.tradeRef").value("TRD-20260315-0001"))
+                .andExpect(jsonPath("$.quantity").value(150.0))
+                .andExpect(jsonPath("$.price").value(250.00));
+
+        mockMvc.perform(put("/v1/trades/42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.tradeRef").value("TRD-20260315-0001"))
+                .andExpect(jsonPath("$.quantity").value(150.0))
+                .andExpect(jsonPath("$.price").value(250.00));
+    }
+
+    @Test
+    void update_missingTrade_returnsNotFoundProblemDetail() throws Exception {
+        when(tradeService.update(anyLong(), any(TradeRequest.class), anyString()))
+                .thenThrow(new TradeNotFoundException("9999999"));
+
+        mockMvc.perform(put("/v1/trades/9999999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tradeRef":"TRD-20260315-0001",
+                                  "instrumentId":1,
+                                  "counterpartyId":2,
+                                  "assetClass":"EQUITY",
+                                  "side":"BUY",
+                                  "quantity":150.0,
+                                  "price":250.00,
+                                  "tradeDate":"2026-03-15"
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").value("Trade not found: 9999999"));
     }
 
     private static void setId(Trade trade, Long id) throws Exception {

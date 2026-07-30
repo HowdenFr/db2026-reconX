@@ -23,12 +23,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.net.URI;
 
 /**
  * TICKET-ADV068 — POST /api/v1/recon/run — returns 202 + jobId
- * TICKET-ADV069 — GET  /api/v1/recon/jobs/{jobId}/results
- * TICKET-ADV070 — PUT  /api/v1/recon/results/{id}/resolve
+ * TICKET-ADV069 — GET /api/v1/recon/jobs/{jobId}/results
+ * TICKET-ADV070 — PUT /api/v1/recon/results/{id}/resolve
  */
 @RestController
 @RequestMapping("/v1/recon")
@@ -39,36 +39,38 @@ public class ReconController {
     private final ReconBreakRepository breaks;
     private final ReconciliationService reconciliationService;
 
-    public ReconController(ReconBreakRepository breaks,
-                           ReconciliationService reconciliationService) {
+    public ReconController(ReconBreakRepository breaks) {
         this.breaks = breaks;
-        this.reconciliationService = reconciliationService;
     }
 
     @PostMapping("/run")
     @Operation(summary = "Trigger a reconciliation job (async)")
     public ResponseEntity<Map<String, String>> runRecon(
-            @Valid @RequestBody(required = false) ReconRunRequest req) {
+            @Valid @RequestBody ReconRunRequest req) {
+
+        // Generate a unique identifier for this reconciliation job
         UUID jobId = UUID.randomUUID();
-        ReconRunRequest request = req == null
-                ? new ReconRunRequest(LocalDate.now().minusDays(1), LocalDate.now(), 1L)
-                : req;
 
-        List<TradeType> internal = sampleTrades(request, BigDecimal.ZERO);
-        List<TradeType> external = sampleTrades(request, new BigDecimal("0.25"));
-        reconciliationService.runRecon(internal, external, ReconciliationRule.EXACT);
+        // Response body sent back to the client
+        Map<String, String> response = Map.of(
+                "jobId", jobId.toString(),
+                "status", "QUEUED");
 
-        return ResponseEntity.accepted()
-                .location(URI.create("/v1/recon/jobs/" + jobId + "/results"))
-                .body(Map.of(
-                        "jobId", jobId.toString(),
-                        "status", "QUEUED"));
+        // Where the client should check later for results
+        URI location = URI.create("/v1/recon/jobs/" + jobId + "/results");
+
+        return ResponseEntity
+                .accepted()
+                .location(location)
+                .body(response);
     }
 
     @GetMapping("/jobs/{jobId}/results")
     @Operation(summary = "Get results for a recon job")
     public List<ReconBreak> results(@PathVariable String jobId) {
+
         return breaks.findAll();
+
     }
 
     @PutMapping("/results/{id}/resolve")
@@ -80,24 +82,5 @@ public class ReconController {
                 .orElseThrow(() -> new TradeNotFoundException("Recon break not found: " + id));
         reconBreak.resolve(body.get("note"));
         return ResponseEntity.ok(breaks.save(reconBreak));
-    }
-
-    private List<TradeType> sampleTrades(ReconRunRequest req, BigDecimal priceBump) {
-        long counterpartyId = req.counterpartyId() == null ? 1L : req.counterpartyId();
-        LocalDate tradeDate = req.to() == null ? LocalDate.now() : req.to();
-
-        return IntStream.range(0, 48)
-                .mapToObj(i -> EquityTrade.builder()
-                        .tradeRef(TradeRef.of("REC-%08d-%04d".formatted(tradeDate.toEpochDay(), i)))
-                        .instrumentSymbol("SAP.DE")
-                        .quantity(new BigDecimal("100"))
-                        .price(new BigDecimal("245.50").add(priceBump.multiply(BigDecimal.valueOf(i % 3))))
-                        .currency("EUR")
-                        .side(i % 2 == 0 ? Side.BUY : Side.SELL)
-                        .tradeDate(tradeDate)
-                        .counterpartyId(counterpartyId)
-                        .build())
-                .map(TradeType.class::cast)
-                .toList();
     }
 }

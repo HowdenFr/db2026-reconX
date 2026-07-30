@@ -70,7 +70,7 @@ class TradeRequestValidationTest {
                 "BUY",
                 new BigDecimal("10"),
                 new BigDecimal("100.00"),
-                LocalDate.of(2026, 7, 30));
+                LocalDate.now().plusDays(1));
 
         Set<ConstraintViolation<TradeRequest>> violations = validator.validate(request);
 

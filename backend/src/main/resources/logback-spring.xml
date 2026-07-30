@@ -27,12 +27,12 @@ leaking into the next request on the same Tomcat thread.
         </appender>
     </springProfile>
 
-    <springProfile name="dev">
-        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{correlationId:-} %X{tradeRef:-} %logger{36} - %msg%n</pattern>
-            </encoder>
-        </appender>
+<springProfile name="dev">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{correlationId:-} %X{tradeRef:-} %logger{36} - %msg%n </pattern>
+        </encoder>
+    </appender>
     </springProfile>
 
     <root level="INFO">

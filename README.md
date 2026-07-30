@@ -157,6 +157,16 @@ npm run dev
 JWT issued from `POST /api/auth/login` is valid for 60 minutes. Refresh tokens
 live in HttpOnly cookies for 7 days.
 
+### API versioning (TICKET-ADV080)
+
+Every resource endpoint is prefixed `/api/v1/...` (`/v1/...` on the
+controller plus the `/api` context-path). Breaking changes ship under a new
+segment (`/api/v2/...`) rather than changing `/api/v1/...` in place — the old
+segment keeps working, deprecated with `Deprecation`, `Sunset`, and `Link`
+response headers, until its sunset date passes. `POST /api/auth/login` is
+intentionally unversioned since it's an infrastructure concern, not a
+versioned resource.
+
 ---
 
 ## Deploy to the demo laptop (Day 10)

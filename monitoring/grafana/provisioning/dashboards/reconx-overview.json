@@ -6,20 +6,46 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "API request rate by endpoint (ADV087)",
+      "title": "API request rate by endpoint (TICKET-ADV087)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
       "targets": [
-        { "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)", "legendFormat": "{{uri}}" }
+        {
+          "refId": "A",
+          "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)",
+          "legendFormat": "{{uri}}"
+        }
       ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" },
+        "overrides": []
+      },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
     },
     {
       "type": "timeseries",
-      "title": "API P95 latency (ADV088)",
+      "title": "API response time P50/P95/P99 (ADV088)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
       "targets": [
-        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "{{uri}}" }
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))",
+          "legendFormat": "P50 {{uri}}"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))",
+          "legendFormat": "P95 {{uri}}"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))",
+          "legendFormat": "P99 {{uri}}"
+        }
       ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
     },
     {
@@ -33,7 +59,13 @@
       "type": "timeseries",
       "title": "Trades created / sec (ADV089)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "sum(rate(trade_created_total[1m]))" }],
+      "targets": [
+        { "expr": "sum(rate(trade_created_total[1m]))", "legendFormat": "Trades created /s" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "trades/s" },
+        "overrides": []
+      },
       "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
     },
     {
@@ -85,6 +117,37 @@
         }
       },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+    },
+    {
+      "type": "piechart",
+      "title": "Trades by status (ADV092)",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (trades_by_status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      },
+      "options": {
+        "pieType": "pie",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value"]
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }
     }
   ],
   "refresh": "10s",
