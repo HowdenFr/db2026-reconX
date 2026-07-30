@@ -9,12 +9,15 @@ import com.dbtraining.reconx.service.TradeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -98,5 +101,20 @@ public class TradeController {
         // TODO(TICKET-ADV067): service.softDelete(id, actor); return 204 No Content.
         service.softDelete(id, String.valueOf(principal));
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * TICKET-ADV080 — example of retiring an old endpoint surface area: keep
+     * it registered (so callers get a clear 410, not a bare 404) and point
+     * them at its replacement via standard deprecation headers.
+     */
+    @Deprecated(since = "v1.4.0", forRemoval = true)
+    @GetMapping(value = "/old-search", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Deprecated — use GET /v1/trades with query filters instead")
+    public ResponseEntity<Void> oldSearch(HttpServletResponse response) {
+        response.setHeader("Deprecation", "true");
+        response.setHeader("Sunset", "Sat, 1 Jul 2026 00:00:00 GMT");
+        response.setHeader("Link", "</api/v1/trades?status=...>; rel=\"successor-version\"");
+        return ResponseEntity.status(HttpStatus.GONE).build();
     }
 }
