@@ -20,14 +20,14 @@ leaking into the next request on the same Tomcat thread.
 <configuration>
     <springProfile name="uat,prod">
         <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
                 <includeMdc>true</includeMdc>
-                <customFields>"service":"reconx-api"</customFields>
+                <customFields>{"service":"reconx-api"}</customFields>
             </encoder>
         </appender>
     </springProfile>
 
-<SpringProfile name="dev">
+<springProfile name="dev">
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{correlationId:-} %X{tradeRef:-} %logger{36} - %msg%n </pattern>

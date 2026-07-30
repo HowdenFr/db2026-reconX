@@ -22,6 +22,14 @@ spring:
     change-log: classpath:/db/changelog/db.changelog-master.xml
     enabled: true
 
+  sql:
+    init:
+      mode: never
+
+  # ADV096 — JMX beans (ReconConfigMBean) for runtime toggles.
+  jmx:
+    enabled: true
+
   jpa:
     open-in-view: false
     hibernate:
@@ -68,7 +76,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,env,loggers
+        include: health,info,metrics,prometheus,env,loggers,beans
       base-path: /actuator
   endpoint:
     health:
@@ -92,7 +100,7 @@ reconx:
   security:
     jwt:
       # dev secret only — UAT/PROD MUST override via env var
-      secret: ${JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
+      secret: ${APP_JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
       expiration-minutes: ${JWT_EXP_MIN:60}
       refresh-expiration-days: ${JWT_REFRESH_EXP_DAYS:7}
       issuer: reconx

@@ -21,7 +21,7 @@ spring:
 reconx:
   security:
     jwt:
-      secret: ${JWT_SECRET}
+      secret: ${APP_JWT_SECRET}
       expiration-minutes: ${JWT_EXP_MIN:30}
 
 management:

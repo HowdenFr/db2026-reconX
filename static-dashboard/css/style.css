@@ -40,6 +40,7 @@
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
+
 [data-theme="dark"] {
   --color-bg:      #1a1a1a;
   --color-bg-alt:  #242424;
@@ -106,6 +107,8 @@ body {
 .stat-card h3    { margin: 0; font-size: 13px; opacity: 0.7; }
 .stat-card p     { margin: var(--space-2) 0 0; font-size: 22px; font-weight: 700; }
 
+
+.alert--danger {animation: pulse-danger 2s infinite ease-in-out; border-color: var(--color-danger); }
 /* TICKET-ADV103 / ADV104 — live feed slide-in */
 #trade-feed { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); max-height: 50vh; overflow-y: auto; }
 .trade-card { background: var(--color-surface); border: 1px solid var(--color-border); border-left: 4px solid var(--color-text-muted); border-radius: var(--radius); padding: var(--space-2) var(--space-3); animation: slide-in 0.3s ease-out; }
@@ -113,5 +116,13 @@ body {
 .trade-card--break   { border-left: 4px solid var(--color-danger); }
 @keyframes slide-in  { from { transform: translateX(-10%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(114, 101, 169, 0.6); } 50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(220,53,69,0)} 100% { transform: scale(1);box-shadow: 0 0 0 0 rgba(114, 101, 169, 0.6); } }
+
 button { padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border); background: transparent; color: inherit; border-radius: var(--radius); cursor: pointer; }
 :focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
