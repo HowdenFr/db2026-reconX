@@ -26,6 +26,10 @@ spring:
     init:
       mode: never
 
+  # ADV096 — JMX beans (ReconConfigMBean) for runtime toggles.
+  jmx:
+    enabled: true
+
   jpa:
     open-in-view: false
     hibernate:
@@ -116,7 +120,3 @@ springdoc:
     operationsSorter: alpha
   api-docs:
     path: /v3/api-docs
-
-spring:
-  jmx:
-    enabled: true

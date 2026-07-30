@@ -5,7 +5,9 @@ import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.Side;
 import com.dbtraining.reconx.model.TradeRef;
+import com.dbtraining.reconx.observability.ReconMetrics;
 import com.dbtraining.reconx.repository.ReconResultRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -27,7 +29,8 @@ class ReconciliationServiceTest {
     void testRunRecon_savesCapturedResultWithCorrectFields() {
         // given
         ReconResultRepository repo = mock(ReconResultRepository.class);
-        ReconciliationService service = new ReconciliationService(new ReconciliationEngine(), repo);
+        ReconMetrics reconMetrics = new ReconMetrics(new SimpleMeterRegistry());
+        ReconciliationService service = new ReconciliationService(new ReconciliationEngine(), repo, reconMetrics);
 
         EquityTrade internal = equity("EQU-20260603-0001", "100.00", "1000");
         EquityTrade external = equity("EQU-20260603-0001", "100.00", "1000");
