@@ -55,6 +55,29 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="008-seed-trades" author="trainer" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM trades
+            </sqlCheck>
+        </preConditions>
+        <loadData file="data/trades.csv" tableName="trades"
+                  separator="," relativeToChangelogFile="true">
+            <column name="trade_ref" type="STRING"/>
+            <column name="instrument_id" type="NUMERIC"/>
+            <column name="counterparty_id" type="NUMERIC"/>
+            <column name="asset_class" type="STRING"/>
+            <column name="side" type="STRING"/>
+            <column name="quantity" type="NUMERIC"/>
+            <column name="price" type="NUMERIC"/>
+            <column name="trade_date" type="DATE"/>
+            <column name="status" type="STRING"/>
+        </loadData>
+        <rollback>
+            <sql>DELETE FROM trades WHERE trade_ref LIKE 'SEED-2026020%';</sql>
+        </rollback>
+    </changeSet>
+
     <changeSet id="008-seed-users" author="trainer" context="dev,test">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
