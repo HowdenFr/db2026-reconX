@@ -2,17 +2,24 @@ package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.ReconRunRequest;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.model.EquityTrade;
+import com.dbtraining.reconx.model.ReconciliationRule;
+import com.dbtraining.reconx.model.Side;
+import com.dbtraining.reconx.model.TradeRef;
+import com.dbtraining.reconx.model.TradeType;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
+import com.dbtraining.reconx.service.ReconciliationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +37,7 @@ import java.net.URI;
 public class ReconController {
 
     private final ReconBreakRepository breaks;
+    private final ReconciliationService reconciliationService;
 
     public ReconController(ReconBreakRepository breaks) {
         this.breaks = breaks;

@@ -30,13 +30,12 @@ public class AuditLogEntry {
     @Column(length = 100)
     private String actor;
 
-    // No @Lob — Hibernate 6 + Postgres treats @Lob String as OID column,
-    // but Liquibase translates CLOB to TEXT. columnDefinition keeps both DBs
-    // happy (H2 accepts TEXT in Postgres mode, Postgres uses it natively).
-    @Column(name = "before_state", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "before_state")
     private String beforeState;
 
-    @Column(name = "after_state", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "after_state")
     private String afterState;
 
     public AuditLogEntry() {}
