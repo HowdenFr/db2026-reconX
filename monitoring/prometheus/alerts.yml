@@ -19,8 +19,10 @@ groups:
         for: 3m
         labels:
           severity: warning
+          team: backend
         annotations:
           summary: "P95 request latency > 500ms for 3 min on {{ $labels.uri }}"
+          description: "Current P95 = {{ $value }}s for {{ $labels.uri }}"
 
       - alert: KafkaDlqGrowing
         expr: increase(kafka_consumer_records_consumed_total{topic="trade-events-dlq"}[5m]) > 0
