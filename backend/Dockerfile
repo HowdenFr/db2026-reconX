@@ -7,12 +7,12 @@
 
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
-RUN ./mvnw -q -B dependency:go-offline || true
-COPY src src
-RUN ./mvnw -q -B -DskipTests package && \
-    mv target/reconx-*.jar app.jar
+COPY pom.xml pom.xml
+COPY backend backend
+COPY recon-audit-starter recon-audit-starter
+RUN ./backend/mvnw -q -B -f /workspace/pom.xml -pl recon-audit-starter,backend -am dependency:go-offline || true
+RUN ./backend/mvnw -q -B -f /workspace/pom.xml -pl recon-audit-starter,backend -am -DskipTests package && \
+    mv /workspace/backend/target/reconx-*.jar /workspace/app.jar
 
 FROM eclipse-temurin:25-jre-alpine
 RUN addgroup -S reconx && adduser -S reconx -G reconx

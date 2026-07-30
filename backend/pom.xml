@@ -154,6 +154,13 @@
             <version>8.0</version>
         </dependency>
 
+        <!-- ADV095 - reusable audit starter auto-configuration -->
+        <dependency>
+            <groupId>com.dbtraining.reconx</groupId>
+            <artifactId>recon-audit-starter</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- Test (ADV040-ADV045, ADV075-ADV079) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
