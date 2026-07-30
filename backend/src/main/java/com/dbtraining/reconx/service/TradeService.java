@@ -17,8 +17,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.forCounterparty;
@@ -94,11 +96,19 @@ public class TradeService {
     public Trade update(Long id, TradeRequest req, String actor) {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
+        TradeStatus currentStatus = trade.getStatus();
+        var instrument = instRepo.findById(req.instrumentId())
+                .orElseThrow(() -> new TradeNotFoundException("Instrument " + req.instrumentId()));
+        var counterparty = cpRepo.findById(req.counterpartyId())
+                .orElseThrow(() -> new TradeNotFoundException("Counterparty " + req.counterpartyId()));
+
+        if (matchesRequest(trade, req, instrument.getId(), counterparty.getId())) {
+            return trade;
+        }
+
         trade.setTradeRef(req.tradeRef());
-        trade.setInstrument(instRepo.findById(req.instrumentId())
-                .orElseThrow(() -> new TradeNotFoundException("Instrument " + req.instrumentId())));
-        trade.setCounterparty(cpRepo.findById(req.counterpartyId())
-                .orElseThrow(() -> new TradeNotFoundException("Counterparty " + req.counterpartyId())));
+        trade.setInstrument(instrument);
+        trade.setCounterparty(counterparty);
         trade.setAssetClass(req.assetClass());
         trade.setSide(req.side());
         trade.setQuantity(req.quantity());
@@ -112,9 +122,27 @@ public class TradeService {
                 TradeEvent.EventType.TRADE_UPDATED,
                 Instant.now(),
                 actor,
-                null,
+                currentStatus.name(),
                 saved.getStatus().name()));
         return saved;
+    }
+
+    private boolean matchesRequest(Trade trade,
+                                   TradeRequest req,
+                                   Long instrumentId,
+                                   Long counterpartyId) {
+        return Objects.equals(trade.getTradeRef(), req.tradeRef())
+                && Objects.equals(trade.getInstrument().getId(), instrumentId)
+                && Objects.equals(trade.getCounterparty().getId(), counterpartyId)
+                && Objects.equals(trade.getAssetClass(), req.assetClass())
+                && Objects.equals(trade.getSide(), req.side())
+                && sameNumber(trade.getQuantity(), req.quantity())
+                && sameNumber(trade.getPrice(), req.price())
+                && Objects.equals(trade.getTradeDate(), req.tradeDate());
+    }
+
+    private boolean sameNumber(BigDecimal left, BigDecimal right) {
+        return left == null ? right == null : right != null && left.compareTo(right) == 0;
     }
 
     public Trade updateStatus(Long id, String status, String actor) {

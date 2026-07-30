@@ -122,12 +122,21 @@ class TradeServiceTest {
         Trade existing = new Trade();
         setId(existing, 42L);
         existing.setTradeRef("TRD-20260315-0001");
+        existing.setAssetClass("FX");
+        existing.setSide("SELL");
+        existing.setQuantity(new BigDecimal("20.0"));
+        existing.setPrice(new BigDecimal("200.00"));
+        existing.setTradeDate(LocalDate.of(2026, 3, 14));
         existing.setStatus(TradeStatus.PENDING);
 
         Instrument instrument = new Instrument();
+        setId(instrument, 1L);
         instrument.setSymbol("SAP.DE");
         Counterparty counterparty = new Counterparty();
+        setId(counterparty, 2L);
         counterparty.setName("Apex Clearing");
+        existing.setInstrument(instrument);
+        existing.setCounterparty(counterparty);
 
         TradeRequest request = new TradeRequest(
                 "TRD-20260315-0001",
@@ -161,8 +170,51 @@ class TradeServiceTest {
         assertThat(eventCaptor.getValue().tradeRef()).isEqualTo("TRD-20260315-0001");
         assertThat(eventCaptor.getValue().eventType()).isEqualTo(TradeEvent.EventType.TRADE_UPDATED);
         assertThat(eventCaptor.getValue().actor()).isEqualTo("alice");
-        assertThat(eventCaptor.getValue().before()).isNull();
+        assertThat(eventCaptor.getValue().before()).isEqualTo("PENDING");
         assertThat(eventCaptor.getValue().after()).isEqualTo("PENDING");
+    }
+
+    @Test
+    void update_identicalRequest_isNoOpAndDoesNotPublishDuplicateEvent() throws Exception {
+        Trade existing = new Trade();
+        setId(existing, 42L);
+        existing.setTradeRef("TRD-20260315-0001");
+        existing.setAssetClass("EQUITY");
+        existing.setSide("BUY");
+        existing.setQuantity(new BigDecimal("150.00"));
+        existing.setPrice(new BigDecimal("250.0"));
+        existing.setTradeDate(LocalDate.of(2026, 3, 15));
+        existing.setStatus(TradeStatus.PENDING);
+
+        Instrument instrument = new Instrument();
+        setId(instrument, 1L);
+        instrument.setSymbol("SAP.DE");
+        existing.setInstrument(instrument);
+
+        Counterparty counterparty = new Counterparty();
+        setId(counterparty, 2L);
+        counterparty.setName("Apex Clearing");
+        existing.setCounterparty(counterparty);
+
+        TradeRequest request = new TradeRequest(
+                "TRD-20260315-0001",
+                1L,
+                2L,
+                "EQUITY",
+                "BUY",
+                new BigDecimal("150.0"),
+                new BigDecimal("250.00"),
+                LocalDate.of(2026, 3, 15));
+
+        when(tradeRepo.findById(42L)).thenReturn(Optional.of(existing));
+        when(instRepo.findById(1L)).thenReturn(Optional.of(instrument));
+        when(cpRepo.findById(2L)).thenReturn(Optional.of(counterparty));
+
+        Trade updated = tradeService.update(42L, request, "alice");
+
+        assertThat(updated).isSameAs(existing);
+        verify(tradeRepo, never()).save(any(Trade.class));
+        verify(events, never()).publish(any(TradeEvent.class));
     }
 
     @Test
@@ -191,5 +243,17 @@ class TradeServiceTest {
         Field field = Trade.class.getDeclaredField("id");
         field.setAccessible(true);
         field.set(trade, id);
+    }
+
+    private static void setId(Instrument instrument, Long id) throws Exception {
+        Field field = Instrument.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(instrument, id);
+    }
+
+    private static void setId(Counterparty counterparty, Long id) throws Exception {
+        Field field = Counterparty.class.getDeclaredField("id");
+        field.setAccessible(true);
+        field.set(counterparty, id);
     }
 }
