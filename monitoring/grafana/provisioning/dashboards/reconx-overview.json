@@ -50,9 +50,52 @@
     },
     {
       "type": "stat",
-      "title": "Open recon breaks (ADV091)",
+      "title": "Open recon breaks (TICKET-ADV091)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "recon_break_count" }],
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "recon_break_count"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
     },
     {
