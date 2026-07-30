@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.forCounterparty;
+import static com.dbtraining.reconx.repository.TradeSpecifications.forCounterpartyName;
 import static com.dbtraining.reconx.repository.TradeSpecifications.hasStatus;
 import static com.dbtraining.reconx.repository.TradeSpecifications.tradeDateBetween;
 
