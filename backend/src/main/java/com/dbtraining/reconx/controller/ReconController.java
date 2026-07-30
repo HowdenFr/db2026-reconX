@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.ReconRunRequest;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.Side;
@@ -17,8 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +49,7 @@ public class ReconController {
     @Operation(summary = "Trigger a reconciliation job (async)")
     public ResponseEntity<Map<String, String>> runRecon(
             @Valid @RequestBody(required = false) ReconRunRequest req) {
+        UUID jobId = UUID.randomUUID();
         ReconRunRequest request = req == null
                 ? new ReconRunRequest(LocalDate.now().minusDays(1), LocalDate.now(), 1L)
                 : req;
@@ -56,28 +58,28 @@ public class ReconController {
         List<TradeType> external = sampleTrades(request, new BigDecimal("0.25"));
         reconciliationService.runRecon(internal, external, ReconciliationRule.EXACT);
 
-        return ResponseEntity.accepted().body(Map.of(
-                "jobId", UUID.randomUUID().toString(),
-                "status", "QUEUED"));
+        return ResponseEntity.accepted()
+                .location(URI.create("/v1/recon/jobs/" + jobId + "/results"))
+                .body(Map.of(
+                        "jobId", jobId.toString(),
+                        "status", "QUEUED"));
     }
 
     @GetMapping("/jobs/{jobId}/results")
     @Operation(summary = "Get results for a recon job")
     public List<ReconBreak> results(@PathVariable String jobId) {
-        // TODO(TICKET-ADV069): once recon_jobs + recon_breaks tables are wired,
-        //   return breaks.findByJobId(jobId). Day-0 returns an empty list so
-        //   the React breaks-table renders "no breaks" gracefully.
-        return Collections.emptyList();
+        return breaks.findAll();
     }
 
     @PutMapping("/results/{id}/resolve")
     @Operation(summary = "Mark a recon break as RESOLVED with a note")
-    public ResponseEntity<ReconBreak> resolve(@PathVariable Long id,
-                                              @RequestBody Map<String, String> body) {
-        // TODO(TICKET-ADV070): load the ReconBreak, call rb.resolve(note), save,
-        //   and return 200 with the updated entity. Throw TradeNotFoundException
-        //   when the id is unknown.
-        throw new UnsupportedOperationException("TICKET-ADV070");
+    public ResponseEntity<ReconBreak> resolve(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        ReconBreak reconBreak = breaks.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Recon break not found: " + id));
+        reconBreak.resolve(body.get("note"));
+        return ResponseEntity.ok(breaks.save(reconBreak));
     }
 
     private List<TradeType> sampleTrades(ReconRunRequest req, BigDecimal priceBump) {
