@@ -39,8 +39,9 @@ public class ReconController {
     private final ReconBreakRepository breaks;
     private final ReconciliationService reconciliationService;
 
-    public ReconController(ReconBreakRepository breaks) {
+    public ReconController(ReconBreakRepository breaks, ReconciliationService reconciliationService) {
         this.breaks = breaks;
+        this.reconciliationService = reconciliationService;
     }
 
     @PostMapping("/run")

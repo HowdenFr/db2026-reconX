@@ -48,8 +48,6 @@ class TradeHistoryServiceTest {
 
     @Test
     void recordsInsertAndThreeUpdatesAndReturnsHistoricalSnapshots() {
-        jdbcTemplate.execute("ALTER TABLE instruments ADD COLUMN metadata JSON");
-
         Long tradeId = inNewTransaction(() -> {
             Counterparty counterparty = entityManager.find(Counterparty.class, 1L);
             Instrument instrument = entityManager.find(Instrument.class, 1L);
