@@ -37,4 +37,12 @@ public interface TradeRepository
                               Pageable pageable);
 
     long countByStatus(TradeStatus status);
+
+    @Query(value = """
+            SELECT COUNT(*)
+            FROM trades
+            WHERE status = :status
+              AND deleted_at IS NULL
+            """, nativeQuery = true)
+    long countByStatus(@Param("status") String status);
 }
