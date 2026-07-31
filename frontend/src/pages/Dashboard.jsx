@@ -2,6 +2,7 @@
 // TICKET-ADV116 — useTradeStream live feed.
 import React from 'react';
 import { withAuth } from '@components/withAuth.jsx';
+import { withErrorBoundary } from '@components/withErrorBoundary.jsx';
 import { useTradeStream } from '@hooks/useTradeStream.js';
 
 function StatCard({ label, value }) {
@@ -37,4 +38,4 @@ function Dashboard() {
   );
 }
 
-export default withAuth(Dashboard);
+export default withErrorBoundary(withAuth(Dashboard));
