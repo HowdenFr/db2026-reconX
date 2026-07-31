@@ -12,7 +12,6 @@ const Dashboard = lazy(() => import("@pages/Dashboard.jsx"));
 const Trades = lazy(() => import("@pages/Trades.jsx"));
 const AddTrade = lazy(() => import("@pages/AddTrade.jsx"));
 const Login = lazy(() => import("@pages/Login.jsx"));
-const Audit = lazy(() => import("@pages/Audit.jsx"));
 
 function App() {
   const { theme, toggle } = useTheme();
@@ -37,7 +36,6 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/trades" element={<Trades />} />
             <Route path="/trades/new" element={<AddTrade />} />
-            <Route path="/audit" element={<Audit />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

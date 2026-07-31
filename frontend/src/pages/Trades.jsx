@@ -1,7 +1,7 @@
 // TICKET-ADV114 — Compound DataTable.
 // TICKET-ADV117 — useDebouncedSearch.
 // TICKET-ADV121 — useCallback on the handler passed to memoised <TradeRow />.
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { withAuth } from '@components/withAuth.jsx';
 import DataTable from '@components/DataTable.jsx';
 import { TradeRow } from '@components/TradeRow.jsx';
@@ -18,11 +18,23 @@ function Trades() {
   // Reference-stable across renders so ADV119's TradeRow memo actually holds.
   const handleSelect = useCallback((id) => setSelectedId(id), []);
 
-  // TODO(TICKET-ADV114 + ADV117): useEffect that:
-  //   - builds a query string from `page` and `debounced` (status filter)
-  //   - calls api.listTrades(params) and stores the response in `data`
-  //   - re-runs whenever `page` or `debounced` changes
-  //   - degrades gracefully on error (set empty page).
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams({ page: String(page) });
+    if (debounced) params.set('status', debounced);
+
+    api.listTrades(`?${params.toString()}`)
+      .then((res) => {
+        if (cancelled) return;
+        setData({ items: res.content, totalPages: res.totalPages });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setData({ items: [], totalPages: 0 });
+      });
+
+    return () => { cancelled = true; };
+  }, [page, debounced]);
 
   return (
     <section>
