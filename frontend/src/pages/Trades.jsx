@@ -1,8 +1,10 @@
 // TICKET-ADV114 — Compound DataTable.
 // TICKET-ADV117 — useDebouncedSearch.
-import React, { useState } from 'react';
+// TICKET-ADV121 — useCallback on the handler passed to memoised <TradeRow />.
+import React, { useCallback, useState } from 'react';
 import { withAuth } from '@components/withAuth.jsx';
 import DataTable from '@components/DataTable.jsx';
+import { TradeRow } from '@components/TradeRow.jsx';
 import { useDebouncedSearch } from '@hooks/useDebouncedSearch.js';
 import { api } from '@services/apiService.js';
 
@@ -11,6 +13,10 @@ function Trades() {
   const debounced = useDebouncedSearch(search, 300);
   const [page, setPage] = useState(0);
   const [data, setData] = useState({ items: [], totalPages: 0 });
+  const [selectedId, setSelectedId] = useState(null);
+
+  // Reference-stable across renders so ADV119's TradeRow memo actually holds.
+  const handleSelect = useCallback((id) => setSelectedId(id), []);
 
   // TODO(TICKET-ADV114 + ADV117): useEffect that:
   //   - builds a query string from `page` and `debounced` (status filter)
@@ -37,15 +43,7 @@ function Trades() {
         ]} />
         <DataTable.Body
           rows={data.items}
-          render={(row) => (
-            <>
-              <span>{row.tradeRef}</span>
-              <span>{row.symbol}</span>
-              <span>{row.qty}</span>
-              <span>{row.price}</span>
-              <span>{row.status}</span>
-            </>
-          )}
+          render={(row) => <TradeRow trade={row} onClick={handleSelect} />}
         />
         <DataTable.Pagination
           page={page}

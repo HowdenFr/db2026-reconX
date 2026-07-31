@@ -1,15 +1,18 @@
 // TICKET-ADV119 — React.memo on <TradeRow /> with a field-scoped equality check.
 import React from 'react';
 
+// display: contents drops this wrapper from the box tree so its children
+// land directly in <DataTable.Body>'s CSS grid row, matching the plain
+// <span> markup DataTable.Body's `render` prop expects for each column.
 function TradeRowImpl({ trade, onClick }) {
   return (
-    <tr onClick={() => onClick(trade.id)}>
-      <td>{trade.tradeRef}</td>
-      <td>{trade.instrumentSymbol}</td>
-      <td>{trade.quantity}</td>
-      <td>{trade.price}</td>
-      <td><span className={`status-pill ${trade.status.toLowerCase()}`}>{trade.status}</span></td>
-    </tr>
+    <span style={{ display: 'contents' }} onClick={() => onClick(trade.id)}>
+      <span>{trade.tradeRef}</span>
+      <span>{trade.instrumentSymbol}</span>
+      <span>{trade.quantity}</span>
+      <span>{trade.price}</span>
+      <span className={`status-pill ${trade.status.toLowerCase()}`}>{trade.status}</span>
+    </span>
   );
 }
 
