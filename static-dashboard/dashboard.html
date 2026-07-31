@@ -12,6 +12,7 @@ TICKET-ADV104 — #sse-status connection badge
   <meta charset="utf-8" />
   <title>ReconX (static) — Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="app-shell">
@@ -48,8 +49,8 @@ TICKET-ADV104 — #sse-status connection badge
 
       <section aria-labelledby="feed">
         <h2 id="feed">Live trade feed</h2>
-        <!-- TICKET-ADV100 aria-live so screen readers announce new trades -->
-        <div id="trade-feed" role="status" aria-live="polite" aria-atomic="false"></div>
+        <section id="trade-feed" class="trade-feed" aria-label="Live trades"
+                 role="status" aria-live="polite" aria-atomic="false"></section>
       </section>
     </main>
   </div>
@@ -58,7 +59,6 @@ TICKET-ADV104 — #sse-status connection badge
     <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
   </footer>
 
-  <script src="js/theme.js"></script>
   <script src="js/sse.js"></script>
 </body>
 </html>
