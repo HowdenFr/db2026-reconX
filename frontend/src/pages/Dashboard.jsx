@@ -48,9 +48,12 @@ function Dashboard() {
     <section>
       <h2>Dashboard</h2>
       <div className="stat-grid">
-        {/* TODO(TICKET-ADV120): render four <StatCard>s - Portfolio value,
-            Trades streamed, Matched, Open breaks. */}
+        <StatCard label="Portfolio value (USD)" value={portfolioValue.toLocaleString()} />
         <StatCard label="Trades streamed" value={trades.length} />
+        <StatCard label="Matched trades" value={statusSummary.matchedCount} />
+        <StatCard label="Unmatched trades" value={statusSummary.unmatchedCount} />
+        <StatCard label="Disputed trades" value={statusSummary.disputedCount} />
+        <StatCard label="Matched value (USD)" value={statusSummary.matchedValue.toLocaleString()} />
       </div>
       <div role="status" aria-live="polite">
         SSE: {isConnected ? 'connected' : 'disconnected'}
