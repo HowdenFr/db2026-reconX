@@ -43,7 +43,11 @@
                 <not><columnExists tableName="instruments" columnName="metadata"/></not>
             </and>
         </preConditions>
-        <sql>ALTER TABLE instruments ADD COLUMN metadata JSON DEFAULT '{}' NOT NULL;</sql>
+        <!-- DEFAULT '{}' (plain string literal) makes H2 store the JSON scalar
+             string "{}" instead of an empty JSON object, which then fails to
+             deserialize into Map<String,Object> as soon as a row is actually
+             read back. The JSON '...' literal form tells H2 to parse it as JSON. -->
+        <sql>ALTER TABLE instruments ADD COLUMN metadata JSON DEFAULT JSON'{}' NOT NULL;</sql>
         <rollback>
             <sql>ALTER TABLE instruments DROP COLUMN metadata;</sql>
         </rollback>
