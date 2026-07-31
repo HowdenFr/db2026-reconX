@@ -40,6 +40,7 @@ class KafkaErrorHandlerConfigTest {
         assertThat(backOff.getInitialInterval()).isEqualTo(1_000L);
         assertThat(backOff.getMultiplier()).isEqualTo(2.0);
         assertThat(backOff.getMaxElapsedTime()).isEqualTo(8_000L);
+        assertThat(backOff.getMaxAttempts()).isEqualTo(3);
 
         BackOffExecution execution = backOff.start();
         assertThat(execution.nextBackOff()).isEqualTo(1_000L);
