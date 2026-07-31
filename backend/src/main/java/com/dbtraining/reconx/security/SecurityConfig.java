@@ -87,7 +87,14 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/h2/**")
+                                "/h2/**",
+                                // Spring Boot forwards to /error to render any error response
+                                // (a 403 from an AuthorizationDeniedException included). If this
+                                // path itself required authentication, that internal forward would
+                                // re-enter the filter chain with no auth context, fail, and the
+                                // 401 entry point would stamp over the real status -- every
+                                // AccessDeniedException would come back as 401 instead of 403.
+                                "/error")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/trades/**")
                         .hasAnyRole("VIEWER", "TRADER", "RECON_ANALYST", "ADMIN")
@@ -105,7 +112,9 @@ public class SecurityConfig {
                         .authenticated())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
-                                response.sendError(HttpStatus.UNAUTHORIZED.value())))
+                                response.sendError(HttpStatus.UNAUTHORIZED.value()))
+                        .accessDeniedHandler((request, response, exception) ->
+                                response.sendError(HttpStatus.FORBIDDEN.value())))
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
