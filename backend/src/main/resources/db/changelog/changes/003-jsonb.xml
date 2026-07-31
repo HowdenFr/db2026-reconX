@@ -2,10 +2,12 @@
 <!--
  ============================================================================
  TICKET-ADV009 — JSONB column on instruments (+ GIN index on Postgres)
- WHAT:    instruments.metadata as JSONB to hold per-asset-class detail
-          (e.g. dividend yield, country, sector).
- HOW:     Postgres-only step; H2 dialect lacks JSONB. The precondition guards
-          dialect so dev (H2) skips the column entirely.
+ WHAT:    instruments.metadata as JSONB (Postgres) / JSON (H2) to hold
+          per-asset-class detail (e.g. dividend yield, country, sector).
+ HOW:     Two dialect-specific changesets guarded by <dbms>. The entity uses
+          Hibernate's @JdbcTypeCode(SqlTypes.JSON), which resolves to jsonb
+          on Postgres and H2's native JSON type on dev — both changesets
+          must produce a column ddl-auto=validate accepts for that dialect.
  WHY:     Schemaless metadata avoids 12 columns that only apply to one asset
           class. Trade-off: validation moves to the app layer.
  OBSERVE: \d instruments shows metadata jsonb. EXPLAIN ANALYZE on a metadata
@@ -38,11 +40,10 @@
         <preConditions onFail="MARK_RAN">
             <and>
                 <dbms type="h2"/>
-                <tableExists tableName="instruments"/>
                 <not><columnExists tableName="instruments" columnName="metadata"/></not>
             </and>
         </preConditions>
-        <sql>ALTER TABLE instruments ADD COLUMN metadata CLOB DEFAULT '{}' NOT NULL;</sql>
+        <sql>ALTER TABLE instruments ADD COLUMN metadata JSON DEFAULT '{}' NOT NULL;</sql>
         <rollback>
             <sql>ALTER TABLE instruments DROP COLUMN metadata;</sql>
         </rollback>

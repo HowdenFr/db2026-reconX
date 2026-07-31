@@ -1,16 +1,19 @@
 package com.dbtraining.reconx.repository.entity;
 
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * TICKET-ADV051 — JPA entity Instrument. JSONB metadata column wired via
- * the Hypersistence Utils JsonBinaryType on Postgres; H2 stores it as a
- * plain CLOB via the dialect translation (acceptable for dev).
+ * TICKET-ADV051 — JPA entity Instrument. metadata uses Hibernate 6's native
+ * @JdbcTypeCode(SqlTypes.JSON), which resolves to the right physical column
+ * type per dialect (jsonb on Postgres, a CLOB-equivalent on H2) instead of
+ * a hardcoded columnDefinition — the previous hardcoded "jsonb" string made
+ * ddl-auto=validate impossible to satisfy on H2, since it always expected
+ * a literal jsonb type regardless of dialect.
  */
 @Entity
 @Table(name = "instruments")
@@ -39,12 +42,10 @@ public class Instrument {
     private String isin;
 
     /**
-     * JSONB metadata: tick size, lot size, exchange code, etc.
-     * On H2 (dev profile) this stores as a CLOB; on Postgres it's true JSONB
-     * and is queryable via the @> operator (see TICKET-ADV009).
+     * Metadata: tick size, lot size, exchange code, etc. True JSONB on
+     * Postgres, queryable via the @> operator (see TICKET-ADV009).
      */
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata = new HashMap<>();
 
     public Instrument() {}
