@@ -87,9 +87,8 @@ class TradeServiceTest {
         verify(events).publish(eventCaptor.capture());
         assertThat(eventCaptor.getValue().tradeRef()).isEqualTo("TRD-20260315-0001");
         assertThat(eventCaptor.getValue().eventType()).isEqualTo(TradeEvent.EventType.TRADE_CREATED);
-        assertThat(eventCaptor.getValue().actor()).isEqualTo("alice");
         assertThat(eventCaptor.getValue().before()).isNull();
-        assertThat(eventCaptor.getValue().after()).isEqualTo("PENDING");
+        assertThat(eventCaptor.getValue().after().path("status").asText()).isEqualTo("PENDING");
     }
 
     @Test
@@ -169,9 +168,10 @@ class TradeServiceTest {
         verify(events).publish(eventCaptor.capture());
         assertThat(eventCaptor.getValue().tradeRef()).isEqualTo("TRD-20260315-0001");
         assertThat(eventCaptor.getValue().eventType()).isEqualTo(TradeEvent.EventType.TRADE_UPDATED);
-        assertThat(eventCaptor.getValue().actor()).isEqualTo("alice");
-        assertThat(eventCaptor.getValue().before()).isEqualTo("PENDING");
-        assertThat(eventCaptor.getValue().after()).isEqualTo("PENDING");
+        assertThat(eventCaptor.getValue().before().path("quantity").decimalValue())
+                .isEqualByComparingTo("20.0");
+        assertThat(eventCaptor.getValue().after().path("quantity").decimalValue())
+                .isEqualByComparingTo("150.0");
     }
 
     @Test

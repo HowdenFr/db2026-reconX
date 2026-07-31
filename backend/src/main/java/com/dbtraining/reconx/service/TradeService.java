@@ -11,6 +11,9 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -20,10 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
-import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.forCounterparty;
 import static com.dbtraining.reconx.repository.TradeSpecifications.forCounterpartyName;
@@ -98,21 +99,14 @@ public class TradeService {
         Trade saved = tradeRepo.save(trade);
         metrics.incrementTradeCreated();
         metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
-        publishSafely(new TradeEvent(
-                UUID.randomUUID(),
-                saved.getTradeRef(),
-                TradeEvent.EventType.TRADE_CREATED,
-                Instant.now(),
-                actor,
-                null,
-                saved.getStatus().name()));
+        publishSafely(TradeEvent.created(saved.getTradeRef(), snapshot(saved)));
         return saved;
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
-        TradeStatus currentStatus = trade.getStatus();
+        JsonNode before = snapshot(trade);
         var instrument = instRepo.findById(req.instrumentId())
                 .orElseThrow(() -> new TradeNotFoundException("Instrument " + req.instrumentId()));
         var counterparty = cpRepo.findById(req.counterpartyId())
@@ -132,14 +126,7 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
 
         Trade saved = tradeRepo.save(trade);
-        publishSafely(new TradeEvent(
-                UUID.randomUUID(),
-                saved.getTradeRef(),
-                TradeEvent.EventType.TRADE_UPDATED,
-                Instant.now(),
-                actor,
-                currentStatus.name(),
-                saved.getStatus().name()));
+        publishSafely(TradeEvent.updated(saved.getTradeRef(), before, snapshot(saved)));
         return saved;
     }
 
@@ -163,34 +150,34 @@ public class TradeService {
 
     public Trade updateStatus(Long id, String status, String actor) {
         Trade trade = tradeRepo.findById(id).orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
-        String before = trade.getStatus().name();
+        JsonNode before = snapshot(trade);
         TradeStatus newStatus = TradeStatus.valueOf(status);
         trade.setStatus(newStatus);
         Trade saved = tradeRepo.save(trade);
-        publishSafely(new TradeEvent(
-                UUID.randomUUID(),
-                saved.getTradeRef(),
-                TradeEvent.EventType.TRADE_UPDATED,
-                Instant.now(),
-                actor,
-                before,
-                saved.getStatus().name()));
+        publishSafely(TradeEvent.updated(saved.getTradeRef(), before, snapshot(saved)));
         return saved;
     }
 
     public void softDelete(Long id, String actor) {
         Trade trade = tradeRepo.findById(id).orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
 
+        JsonNode before = snapshot(trade);
         trade.softDelete();
         Trade saved = tradeRepo.save(trade);
-        publishSafely(new TradeEvent(
-                UUID.randomUUID(),
-                saved.getTradeRef(),
-                TradeEvent.EventType.TRADE_CANCELLED,
-                Instant.now(),
-                actor,
-                null,
-                null));
+        publishSafely(TradeEvent.cancelled(saved.getTradeRef(), before));
+    }
+
+    private JsonNode snapshot(Trade trade) {
+        ObjectNode snapshot = JsonNodeFactory.instance.objectNode();
+        snapshot.put("id", trade.getId());
+        snapshot.put("tradeRef", trade.getTradeRef());
+        snapshot.put("assetClass", trade.getAssetClass());
+        snapshot.put("side", trade.getSide());
+        snapshot.put("quantity", trade.getQuantity());
+        snapshot.put("price", trade.getPrice());
+        snapshot.put("tradeDate", trade.getTradeDate() == null ? null : trade.getTradeDate().toString());
+        snapshot.put("status", trade.getStatus() == null ? null : trade.getStatus().name());
+        return snapshot;
     }
 
     @Transactional(readOnly = true)
