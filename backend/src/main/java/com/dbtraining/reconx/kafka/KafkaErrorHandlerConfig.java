@@ -1,6 +1,5 @@
 package com.dbtraining.reconx.kafka;
 
-import com.dbtraining.reconx.dto.TradeEvent;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.RecordDeserializationException;
@@ -39,12 +38,12 @@ public class KafkaErrorHandlerConfig {
     }
 
     @Bean(name = {"tradeEventsKafkaListenerContainerFactory", "kafkaListenerContainerFactory"})
-    public ConcurrentKafkaListenerContainerFactory<String, TradeEvent> tradeEventsKafkaListenerContainerFactory(
+    public ConcurrentKafkaListenerContainerFactory<Object, Object> tradeEventsKafkaListenerContainerFactory(
             ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
-            ConsumerFactory<String, TradeEvent> consumerFactory,
+            ConsumerFactory<Object, Object> consumerFactory,
             DefaultErrorHandler kafkaErrorHandler
     ) {
-        ConcurrentKafkaListenerContainerFactory<String, TradeEvent> factory =
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         configurer.configure(factory, consumerFactory);
         factory.setCommonErrorHandler(kafkaErrorHandler);
