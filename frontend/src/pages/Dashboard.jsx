@@ -48,16 +48,33 @@ function Dashboard() {
     <section>
       <h2>Dashboard</h2>
       <div className="stat-grid">
-        <StatCard label="Portfolio value (USD)" value={portfolioValue.toLocaleString()} />
+        {/* TODO(TICKET-ADV120): render four <StatCard>s - Portfolio value,
+            Trades streamed, Matched, Open breaks. */}
         <StatCard label="Trades streamed" value={trades.length} />
-        <StatCard label="Matched trades" value={statusSummary.matchedCount} />
-        <StatCard label="Unmatched trades" value={statusSummary.unmatchedCount} />
-        <StatCard label="Disputed trades" value={statusSummary.disputedCount} />
-        <StatCard label="Matched value (USD)" value={statusSummary.matchedValue.toLocaleString()} />
       </div>
       <div role="status" aria-live="polite">
         SSE: {isConnected ? 'connected' : 'disconnected'}
       </div>
+      <section aria-labelledby="live-trades-heading">
+        <h3 id="live-trades-heading">Live trades</h3>
+        <ol aria-label="Live trade feed">
+          {trades.map((trade, index) => {
+            const symbol = trade.instrumentSymbol || trade.symbol || '-';
+            const quantity = trade.qty ?? trade.quantity ?? '-';
+            const key = trade.id ?? trade.tradeRef ?? `${symbol}-${index}`;
+
+            return (
+              <li key={key}>
+                <strong>{trade.tradeRef || 'Unknown ref'}</strong>{' '}
+                <span>{symbol}</span>{' '}
+                <span>qty={quantity}</span>{' '}
+                <span>price={trade.price ?? '-'}</span>{' '}
+                <span>[{trade.status || 'PENDING'}]</span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
     </section>
   );
 }
