@@ -1,6 +1,6 @@
 // TICKET-ADV120 — useMemo for portfolio-value calc.
 // TICKET-ADV116 — useTradeStream live feed.
-import React from 'react';
+import React, { useMemo } from 'react';
 import { withAuth } from '@components/withAuth.jsx';
 import { withErrorBoundary } from '@components/withErrorBoundary.jsx';
 import { useTradeStream } from '@hooks/useTradeStream.js';
@@ -17,19 +17,43 @@ function StatCard({ label, value }) {
 function Dashboard() {
   const { trades, isConnected } = useTradeStream();
 
-  // TODO(TICKET-ADV120): use useMemo to compute `portfolioValue` =
-  //                     sum(trades[i].quantity * trades[i].price).
-  //                     Memoise on `trades` so it doesn't recompute every render.
+  // This walks the entire live buffer, so cache it across unrelated renders.
+  const portfolioValue = useMemo(
+    () => trades.reduce(
+      (sum, trade) => sum + (Number(trade.quantity) * Number(trade.price) || 0),
+      0,
+    ),
+    [trades],
+  );
 
-  // TODO(TICKET-ADV120): derive `matched` (status === 'MATCHED') and
-  //                     `breaks` (status in ['UNMATCHED','DISPUTED']) counts.
+  // Partition once instead of repeatedly filtering the live buffer. The stable
+  // result object can also be passed to memoised children in later tickets.
+  const statusSummary = useMemo(() => {
+    const matched = trades.filter((trade) => trade.status === 'MATCHED');
+    const unmatched = trades.filter((trade) => trade.status === 'UNMATCHED');
+    const disputed = trades.filter((trade) => trade.status === 'DISPUTED');
+
+    return {
+      matchedCount: matched.length,
+      unmatchedCount: unmatched.length,
+      disputedCount: disputed.length,
+      matchedValue: matched.reduce(
+        (sum, trade) => sum + (Number(trade.quantity) * Number(trade.price) || 0),
+        0,
+      ),
+    };
+  }, [trades]);
 
   return (
     <section>
       <h2>Dashboard</h2>
       <div className="stat-grid">
-        {/* TODO(TICKET-ADV120): render four <StatCard>s — Portfolio value,
-            Trades streamed, Matched, Open breaks. */}
+        <StatCard label="Portfolio value (USD)" value={portfolioValue.toLocaleString()} />
+        <StatCard label="Trades streamed" value={trades.length} />
+        <StatCard label="Matched trades" value={statusSummary.matchedCount} />
+        <StatCard label="Unmatched trades" value={statusSummary.unmatchedCount} />
+        <StatCard label="Disputed trades" value={statusSummary.disputedCount} />
+        <StatCard label="Matched value (USD)" value={statusSummary.matchedValue.toLocaleString()} />
       </div>
       <div role="status" aria-live="polite">
         SSE: {isConnected ? 'connected' : 'disconnected'}
