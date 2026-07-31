@@ -14,8 +14,11 @@ function StatCard({ label, value }) {
   );
 }
 
-function Dashboard() {
-  const { trades, isConnected } = useTradeStream();
+function Dashboard({ trades: tradesProp }) {
+  const stream = useTradeStream();
+  // Tests inject trades directly instead of mocking EventSource.
+  const trades = tradesProp ?? stream.trades;
+  const isConnected = tradesProp ? true : stream.isConnected;
 
   // This walks the entire live buffer, so cache it across unrelated renders.
   const portfolioValue = useMemo(
