@@ -4,6 +4,8 @@ import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
 import io.micrometer.core.annotation.Timed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -37,6 +39,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ReconciliationEngine {
+
+    private static final Logger log = LoggerFactory.getLogger(ReconciliationEngine.class);
 
     /**
      * TICKET-ADV037 — bounded, named pool owned by this engine so per-counterparty
@@ -97,6 +101,21 @@ public class ReconciliationEngine {
     /** TICKET-ADV037 — releases the executor this engine owns. */
     public void shutdown() {
         reconExecutor.shutdown();
+    }
+
+    /**
+     * TICKET-ADV131 — called by ReconciliationConsumer on TRADE_CREATED /
+     * TRADE_UPDATED. Logs the trigger so the Kafka -> recon flow is traceable
+     * end-to-end; a real job queue/scheduler is out of scope here (that would
+     * block the consumer thread and back up the partition).
+     */
+    public void scheduleRecon(String tradeRef) {
+        log.info("Recon scheduled for tradeRef={}", tradeRef);
+    }
+
+    /** TICKET-ADV131 — called on TRADE_CANCELLED to drop any pending recon. */
+    public void cancelPendingRecon(String tradeRef) {
+        log.info("Recon cancelled for tradeRef={}", tradeRef);
     }
 
     private ReconResult matchOne(TradeType internal, TradeType external, ReconciliationRule rule) {
