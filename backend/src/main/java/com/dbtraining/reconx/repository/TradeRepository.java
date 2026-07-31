@@ -4,10 +4,12 @@ import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -23,6 +25,14 @@ public interface TradeRepository
         extends JpaRepository<Trade, Long>, JpaSpecificationExecutor<Trade> {
 
     Optional<Trade> findByTradeRef(String tradeRef);
+
+    // Overrides JpaSpecificationExecutor's default findAll to eagerly fetch
+    // the lazy instrument/counterparty associations TradeMapper reads —
+    // without this, mapping to TradeResponse throws LazyInitializationException
+    // once the transaction that loaded the Page has closed.
+    @Override
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
+    Page<Trade> findAll(Specification<Trade> spec, Pageable pageable);
 
     @Query("""
         SELECT t FROM Trade t

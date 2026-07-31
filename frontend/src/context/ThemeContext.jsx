@@ -1,26 +1,36 @@
 // TICKET-ADV124 — ThemeProvider: context flips data-theme; CSS owns colours.
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext({ theme: 'light', toggle: () => {} });
+const STORAGE_KEY = 'reconx-theme';
+const ThemeContext = createContext(null);
+
+function initialTheme() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 export function ThemeProvider({ children }) {
-  // TODO(TICKET-ADV124): lazy-init from localStorage('reconx-theme') — fall back
-  //                     to 'light' if nothing is stored.
-  const [theme /*, setTheme */] = useState('light');
+  const [theme, setTheme] = useState(initialTheme);
 
-  // TODO(TICKET-ADV124): useEffect that:
-  //                     1. sets document.documentElement.dataset.theme = theme
-  //                     2. persists `theme` to localStorage on every change.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(STORAGE_KEY, theme);
+  }, [theme]);
 
-  const toggle = () => {
-    // TODO(TICKET-ADV124): flip 'light' <-> 'dark' via setTheme(prev => ...).
-  };
+  const toggle = useCallback(() => {
+    setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within a ThemeProvider');
+  return ctx;
+}
