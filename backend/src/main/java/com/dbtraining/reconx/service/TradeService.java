@@ -11,6 +11,8 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -43,6 +45,8 @@ import static com.dbtraining.reconx.repository.TradeSpecifications.tradeDateBetw
 @Transactional
 public class TradeService {
 
+    private static final Logger log = LoggerFactory.getLogger(TradeService.class);
+
     private final TradeRepository tradeRepo;
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
@@ -59,6 +63,18 @@ public class TradeService {
         this.instRepo = instRepo;
         this.events = events;
         this.metrics = metrics;
+    }
+
+    // TradeEventProducer is Day 9 (TICKET-ADV129) and currently unimplemented.
+    // Its own header comment says a Kafka publish failure must never break the
+    // request; guard here until that ticket lands.
+    private void publishSafely(TradeEvent event) {
+        try {
+            events.publish(event);
+        } catch (RuntimeException e) {
+            log.warn("TradeEventProducer.publish failed for tradeRef={} (TICKET-ADV129 not yet implemented)",
+                    event.tradeRef(), e);
+        }
     }
 
     public Trade create(TradeRequest req, String actor) {
@@ -82,7 +98,7 @@ public class TradeService {
         Trade saved = tradeRepo.save(trade);
         metrics.incrementTradeCreated();
         metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
-        events.publish(new TradeEvent(
+        publishSafely(new TradeEvent(
                 UUID.randomUUID(),
                 saved.getTradeRef(),
                 TradeEvent.EventType.TRADE_CREATED,
@@ -116,7 +132,7 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
 
         Trade saved = tradeRepo.save(trade);
-        events.publish(new TradeEvent(
+        publishSafely(new TradeEvent(
                 UUID.randomUUID(),
                 saved.getTradeRef(),
                 TradeEvent.EventType.TRADE_UPDATED,
@@ -151,7 +167,7 @@ public class TradeService {
         TradeStatus newStatus = TradeStatus.valueOf(status);
         trade.setStatus(newStatus);
         Trade saved = tradeRepo.save(trade);
-        events.publish(new TradeEvent(
+        publishSafely(new TradeEvent(
                 UUID.randomUUID(),
                 saved.getTradeRef(),
                 TradeEvent.EventType.TRADE_UPDATED,
@@ -167,7 +183,7 @@ public class TradeService {
 
         trade.softDelete();
         Trade saved = tradeRepo.save(trade);
-        events.publish(new TradeEvent(
+        publishSafely(new TradeEvent(
                 UUID.randomUUID(),
                 saved.getTradeRef(),
                 TradeEvent.EventType.TRADE_CANCELLED,

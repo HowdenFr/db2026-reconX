@@ -17,3 +17,22 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 });
+
+// jsdom doesn't implement EventSource either; useTradeStream() opens one
+// unconditionally in a useEffect, so any test rendering a component that
+// calls it crashes unless a test explicitly stubs a fuller mock itself
+// (e.g. via vi.stubGlobal), which still overrides this default fine.
+if (typeof window.EventSource === 'undefined') {
+  window.EventSource = class EventSource {
+    constructor(url) {
+      this.url = url;
+      this.readyState = 0;
+      this.onopen = null;
+      this.onmessage = null;
+      this.onerror = null;
+    }
+    addEventListener() {}
+    removeEventListener() {}
+    close() {}
+  };
+}

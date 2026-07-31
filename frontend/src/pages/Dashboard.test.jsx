@@ -43,7 +43,7 @@ describe("<Dashboard />", () => {
       screen.getByRole("heading", { name: /portfolio value/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /matched trades/i }),
+      screen.getByRole("heading", { name: /^matched trades$/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: /unmatched trades/i }),
