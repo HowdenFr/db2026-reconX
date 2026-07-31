@@ -1,5 +1,5 @@
-// TICKET-ADV120 — useMemo for portfolio-value calc.
-// TICKET-ADV116 — useTradeStream live feed.
+// TICKET-ADV120 - useMemo for portfolio-value calc.
+// TICKET-ADV116 - useTradeStream live feed.
 import React from 'react';
 import { withAuth } from '@components/withAuth.jsx';
 import { withErrorBoundary } from '@components/withErrorBoundary.jsx';
@@ -28,12 +28,33 @@ function Dashboard() {
     <section>
       <h2>Dashboard</h2>
       <div className="stat-grid">
-        {/* TODO(TICKET-ADV120): render four <StatCard>s — Portfolio value,
+        {/* TODO(TICKET-ADV120): render four <StatCard>s - Portfolio value,
             Trades streamed, Matched, Open breaks. */}
+        <StatCard label="Trades streamed" value={trades.length} />
       </div>
       <div role="status" aria-live="polite">
         SSE: {isConnected ? 'connected' : 'disconnected'}
       </div>
+      <section aria-labelledby="live-trades-heading">
+        <h3 id="live-trades-heading">Live trades</h3>
+        <ol aria-label="Live trade feed">
+          {trades.map((trade, index) => {
+            const symbol = trade.instrumentSymbol || trade.symbol || '-';
+            const quantity = trade.qty ?? trade.quantity ?? '-';
+            const key = trade.id ?? trade.tradeRef ?? `${symbol}-${index}`;
+
+            return (
+              <li key={key}>
+                <strong>{trade.tradeRef || 'Unknown ref'}</strong>{' '}
+                <span>{symbol}</span>{' '}
+                <span>qty={quantity}</span>{' '}
+                <span>price={trade.price ?? '-'}</span>{' '}
+                <span>[{trade.status || 'PENDING'}]</span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
     </section>
   );
 }
