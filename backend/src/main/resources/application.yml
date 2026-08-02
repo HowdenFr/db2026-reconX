@@ -22,14 +22,6 @@ spring:
     change-log: classpath:/db/changelog/db.changelog-master.xml
     enabled: true
 
-  sql:
-    init:
-      mode: never
-
-  # ADV096 — JMX beans (ReconConfigMBean) for runtime toggles.
-  jmx:
-    enabled: true
-
   jpa:
     open-in-view: false
     hibernate:
@@ -56,19 +48,22 @@ spring:
     consumer:
       group-id: reconx-service
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: com.dbtraining.reconx.dto
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.dbtraining.reconx.dto.TradeEvent
+        metric.reporters: io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 
 server:
   servlet:
     context-path: /api
 
 # =============================================================================
-# TICKET-ADV083-ADV086 / ADV097 — Actuator + Prometheus exposure
+# TICKET-ADV083-ADV086 / ADV097 / ADV139 — Actuator + Prometheus exposure
 #  Custom metrics registered by com.dbtraining.reconx.observability.TradeMetrics
 #  scrape via /actuator/prometheus.
 # =============================================================================
@@ -76,7 +71,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,env,loggers,beans
+        include: health,info,metrics,prometheus,env,loggers
       base-path: /actuator
   endpoint:
     health:
@@ -84,6 +79,9 @@ management:
       probes:
         enabled: true
   metrics:
+    binders:
+      kafka:
+        enabled: true
     distribution:
       percentiles-histogram:
         http.server.requests: true
@@ -100,7 +98,7 @@ reconx:
   security:
     jwt:
       # dev secret only — UAT/PROD MUST override via env var
-      secret: ${APP_JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
+      secret: ${JWT_SECRET:dev-secret-change-me-32-bytes-min!!}
       expiration-minutes: ${JWT_EXP_MIN:60}
       refresh-expiration-days: ${JWT_REFRESH_EXP_DAYS:7}
       issuer: reconx
