@@ -103,7 +103,10 @@
       "title": "Trades created / sec (ADV089)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
       "targets": [
-        { "expr": "sum(rate(trade_created_total[1m]))", "legendFormat": "Trades created /s" }
+        {
+          "expr": "sum(rate(trade_created_total[1m])) or vector(0)",
+          "legendFormat": "Trades created /s"
+        }
       ],
       "fieldConfig": {
         "defaults": { "unit": "trades/s" },
@@ -112,63 +115,59 @@
       "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
     },
     {
-      "type": "heatmap",
-      "title": "Reconciliation duration histogram (ADV090)",
+      "type": "stat",
+      "title": "Reconciliation runs (last 5m) (ADV090)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{
-        "expr": "sum(rate(reconciliation_duration_seconds_bucket[5m])) by (le)",
-        "format": "heatmap",
-        "legendFormat": "{{le}}"
-      }],
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(reconciliation_duration_seconds_count[5m])) or vector(0)"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "Reconciliation duration bucket",
-          "unit": "s"
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
         },
         "overrides": []
       },
       "options": {
-        "calculate": false,
-        "cellGap": 1,
-        "color": {
-          "mode": "scheme",
-          "scheme": "Spectral"
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
         },
-        "exemplars": {
-          "color": "rgba(255,0,255,0.7)"
-        },
-        "filterValues": {
-          "le": 1e-9
-        },
-        "legend": {
-          "show": true
-        },
-        "rowsFrame": {
-          "layout": "auto"
-        },
-        "showValue": "never",
-        "tooltip": {
-          "mode": "single",
-          "showColorScale": false,
-          "yHistogram": false
-        },
-        "yAxis": {
-          "axisLabel": "Bucket boundary (seconds)",
-          "axisPlacement": "left",
-          "reverse": false,
-          "unit": "s"
-        }
+        "textMode": "auto"
       },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
     },
     {
-      "type": "piechart",
+      "type": "barchart",
       "title": "Trades by status (ADV092)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (status) (trades_by_status)",
+          "expr": "sum by (status) (trades_by_status) or label_replace(vector(0), \"status\", \"PENDING\", \"\", \"\") or label_replace(vector(0), \"status\", \"MATCHED\", \"\", \"\") or label_replace(vector(0), \"status\", \"UNMATCHED\", \"\", \"\") or label_replace(vector(0), \"status\", \"DISPUTED\", \"\", \"\") or label_replace(vector(0), \"status\", \"CANCELLED\", \"\", \"\")",
           "legendFormat": "{{status}}"
         }
       ],
@@ -177,18 +176,18 @@
         "overrides": []
       },
       "options": {
-        "pieType": "pie",
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
         "legend": {
           "displayMode": "list",
           "placement": "right",
-          "showLegend": true,
-          "values": ["value"]
-        }
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single"
+        },
+        "xField": "status"
       },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 }
     }
