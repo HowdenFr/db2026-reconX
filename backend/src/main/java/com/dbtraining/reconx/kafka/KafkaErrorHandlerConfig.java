@@ -27,6 +27,7 @@ public class KafkaErrorHandlerConfig {
 
         ExponentialBackOff backOff = new ExponentialBackOff(1_000L, 2.0);
         backOff.setMaxElapsedTime(8_000L);
+        backOff.setMaxAttempts(3);
 
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
         errorHandler.addNotRetryableExceptions(
