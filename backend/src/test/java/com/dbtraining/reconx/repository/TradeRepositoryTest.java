@@ -36,18 +36,8 @@ class TradeRepositoryTest {
 
     @Test
     void findByFilters_dateRangeOnly_returnsTradesWithinRange() {
-        Counterparty counterparty = new Counterparty();
-        counterparty.setName("Test Bank AG");
-        counterparty.setLeiCode("TESTLEI0000000000002");
-        counterparty.setRegion("EU");
-        counterpartyRepository.save(counterparty);
-
-        Instrument instrument = new Instrument();
-        instrument.setSymbol("SAP.DE");
-        instrument.setName("SAP SE");
-        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
-        instrument.setCurrency("EUR");
-        instrumentRepository.save(instrument);
+        Counterparty counterparty = counterpartyRepository.findById(1L).orElseThrow();
+        Instrument instrument = instrumentRepository.findById(1L).orElseThrow();
 
         Trade trade = new Trade();
         trade.setTradeRef("EQU-20260729-0001");
@@ -61,11 +51,11 @@ class TradeRepositoryTest {
         tradeRepository.save(trade);
 
         Page<Trade> result = tradeRepository.findByFilters(
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 12, 31),
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 31),
                 null,
                 null,
-                PageRequest.of(0, 10));
+                PageRequest.of(0, 20));
 
         assertThat(result.getContent())
                 .extracting(Trade::getTradeRef)
@@ -74,24 +64,9 @@ class TradeRepositoryTest {
 
     @Test
     void findByFilters_statusAndCounterpartyFilters_narrowResults() {
-        Counterparty cpA = new Counterparty();
-        cpA.setName("Bank A");
-        cpA.setLeiCode("TESTLEI0000000000003");
-        cpA.setRegion("EU");
-        counterpartyRepository.save(cpA);
-
-        Counterparty cpB = new Counterparty();
-        cpB.setName("Bank B");
-        cpB.setLeiCode("TESTLEI0000000000004");
-        cpB.setRegion("US");
-        counterpartyRepository.save(cpB);
-
-        Instrument instrument = new Instrument();
-        instrument.setSymbol("MSFT");
-        instrument.setName("Microsoft Corp");
-        instrument.setAssetClass(Instrument.AssetClass.EQUITY);
-        instrument.setCurrency("USD");
-        instrumentRepository.save(instrument);
+        Counterparty cpA = counterpartyRepository.findById(1L).orElseThrow();
+        Counterparty cpB = counterpartyRepository.findById(2L).orElseThrow();
+        Instrument instrument = instrumentRepository.findById(1L).orElseThrow();
 
         Trade matched = new Trade();
         matched.setTradeRef("EQU-20260729-0002");
@@ -117,11 +92,11 @@ class TradeRepositoryTest {
         tradeRepository.save(pendingOtherCp);
 
         Page<Trade> result = tradeRepository.findByFilters(
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 12, 31),
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 31),
                 TradeStatus.MATCHED,
                 cpA.getId(),
-                PageRequest.of(0, 10));
+                PageRequest.of(0, 20));
 
         assertThat(result.getContent())
                 .extracting(Trade::getTradeRef)
