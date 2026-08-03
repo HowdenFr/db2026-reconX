@@ -36,6 +36,7 @@ public class KafkaPipelineIT {
     @Autowired
     private AuditLogRepository auditRepo;
 
+    @Test
     public void testKafkaPipeline() {
         // Here you can implement your integration test logic.
         // For example, you can publish a TradeEvent and verify that it is consumed and
