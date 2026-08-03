@@ -94,6 +94,9 @@ management:
         http.server.requests: 0.5, 0.95, 0.99
     tags:
       application: ${spring.application.name}
+    binders:
+      kafka:
+        enabled: true
 
 # =============================================================================
 # TICKET-ADV072 — JWT signing config (NEVER commit a real secret; override per env)
