@@ -6,6 +6,7 @@ import com.dbtraining.reconx.repository.entity.AuditLogEntry;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,15 +36,20 @@ public class AuditEventConsumer {
     @KafkaListener(topics = "trade-events", groupId = "audit-service")
     @Transactional
     public void onTradeEvent(TradeEvent e) {
-        repo.save(new AuditLogEntry(
-                e.eventId().toString(),
-                e.tradeRef(),
-                e.eventType().name(),
-                e.timestamp(),
-                null,
-                toText(e.before()),
-                toText(e.after())));
-        log.debug("Audit row persisted for eventId={}", e.eventId());
+        try {
+            MDC.put("tradeRef", e.tradeRef());
+            repo.save(new AuditLogEntry(
+                    e.eventId().toString(),
+                    e.tradeRef(),
+                    e.eventType().name(),
+                    e.timestamp(),
+                    null,
+                    toText(e.before()),
+                    toText(e.after())));
+            log.debug("Audit row persisted for eventId={}", e.eventId());
+        } finally {
+            MDC.remove("tradeRef");
+        }
     }
 
     // A JSON-null field round-trips through Kafka as a Jackson NullNode, not
