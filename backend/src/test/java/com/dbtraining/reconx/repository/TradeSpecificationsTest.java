@@ -36,17 +36,17 @@ class TradeSpecificationsTest {
 
     @Test
     void onlyDateRangeSupplied_returnsAllTradesInRange() {
-        Counterparty cpA = counterparty("Bank A", "TESTLEI0000000000005");
-        Counterparty cpB = counterparty("Bank B", "TESTLEI0000000000006");
-        Instrument instrument = instrument("AAPL", "Apple Inc");
+        Counterparty cpA = counterpartyRepository.findById(1L).orElseThrow();
+        Counterparty cpB = counterpartyRepository.findById(2L).orElseThrow();
+        Instrument instrument = instrumentRepository.findById(1L).orElseThrow();
 
         trade("EQU-20260729-0010", instrument, cpA, TradeStatus.MATCHED);
         trade("EQU-20260729-0011", instrument, cpB, TradeStatus.PENDING);
 
         Specification<Trade> spec = Specification.where(
-                tradeDateBetween(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)));
+                tradeDateBetween(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
 
-        Page<Trade> result = tradeRepository.findAll(spec, PageRequest.of(0, 10));
+        Page<Trade> result = tradeRepository.findAll(spec, PageRequest.of(0, 20));
 
         assertThat(result.getContent())
                 .extracting(Trade::getTradeRef)
@@ -55,43 +55,25 @@ class TradeSpecificationsTest {
 
     @Test
     void allFiltersSupplied_narrowsToMatchingTrade() {
-        Counterparty cpA = counterparty("Bank C", "TESTLEI0000000000007");
-        Counterparty cpB = counterparty("Bank D", "TESTLEI0000000000008");
-        Instrument instrument = instrument("GOOGL", "Alphabet Inc");
+        Counterparty cpA = counterpartyRepository.findById(3L).orElseThrow();
+        Counterparty cpB = counterpartyRepository.findById(4L).orElseThrow();
+        Instrument instrument = instrumentRepository.findById(1L).orElseThrow();
 
         Trade target = trade("EQU-20260729-0012", instrument, cpA, TradeStatus.MATCHED);
         trade("EQU-20260729-0013", instrument, cpA, TradeStatus.PENDING);
         trade("EQU-20260729-0014", instrument, cpB, TradeStatus.MATCHED);
 
         Specification<Trade> spec = Specification
-                .where(tradeDateBetween(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+                .where(tradeDateBetween(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)))
                 .and(hasStatus(TradeStatus.MATCHED))
                 .and(forCounterparty(cpA.getId()));
 
-        Page<Trade> result = tradeRepository.findAll(spec, PageRequest.of(0, 10));
+        Page<Trade> result = tradeRepository.findAll(spec, PageRequest.of(0, 20));
 
         assertThat(result.getContent())
                 .extracting(Trade::getTradeRef)
                 .containsExactly(target.getTradeRef());
     }
-
-    private Counterparty counterparty(String name, String lei) {
-        Counterparty c = new Counterparty();
-        c.setName(name);
-        c.setLeiCode(lei);
-        c.setRegion("EU");
-        return counterpartyRepository.save(c);
-    }
-
-    private Instrument instrument(String symbol, String name) {
-        Instrument i = new Instrument();
-        i.setSymbol(symbol);
-        i.setName(name);
-        i.setAssetClass(Instrument.AssetClass.EQUITY);
-        i.setCurrency("USD");
-        return instrumentRepository.save(i);
-    }
-
     private Trade trade(String ref, Instrument instrument, Counterparty counterparty, TradeStatus status) {
         Trade t = new Trade();
         t.setTradeRef(ref);

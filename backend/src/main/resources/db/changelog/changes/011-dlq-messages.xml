@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="011-dlq-messages-postgres" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="postgresql"/>
+                <not><tableExists tableName="dlq_messages"/></not>
+            </and>
+        </preConditions>
+
+        <createTable tableName="dlq_messages">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="trade_ref" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_topic" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kafka_partition" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kafka_offset" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="TEXT"/>
+            <column name="first_seen" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="dlq_messages" indexName="idx_dlq_messages_trade_ref">
+            <column name="trade_ref"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="011-dlq-messages-h2" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="h2"/>
+                <not><tableExists tableName="dlq_messages"/></not>
+            </and>
+        </preConditions>
+
+        <createTable tableName="dlq_messages">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="trade_ref" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_topic" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kafka_partition" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kafka_offset" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="CLOB"/>
+            <column name="first_seen" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="dlq_messages" indexName="idx_dlq_messages_trade_ref">
+            <column name="trade_ref"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

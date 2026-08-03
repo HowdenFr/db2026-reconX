@@ -38,7 +38,11 @@ public class KafkaErrorHandlerConfig {
         return errorHandler;
     }
 
-    @Bean(name = {"tradeEventsKafkaListenerContainerFactory", "kafkaListenerContainerFactory"})
+    @Bean(name = {
+            "tradeEventsKafkaListenerContainerFactory",
+            "tradeEventListenerContainerFactory",
+            "kafkaListenerContainerFactory"
+    })
     public ConcurrentKafkaListenerContainerFactory<Object, Object> tradeEventsKafkaListenerContainerFactory(
             ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
             ConsumerFactory<Object, Object> consumerFactory,
