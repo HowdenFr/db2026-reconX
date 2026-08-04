@@ -53,6 +53,10 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+        # TICKET-ADV145 (config review, finding #5): assert this explicitly
+        # rather than relying on the Kafka 3.x client default, which could
+        # silently change in a future upgrade.
+        enable.idempotence: true
     consumer:
       group-id: reconx-service
       auto-offset-reset: earliest
